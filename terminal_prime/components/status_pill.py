@@ -7,4 +7,4 @@ class StatusPill(ctk.CTkLabel):
         bg, fg = colors
         super().__init__(parent, text=status.replace("_", " "),
                          font=theme.FONT_LABEL_UPPER, text_color=fg, fg_color=bg,
-                         corner_radius=4, padx=8, pady=2)
+                         corner_radius=12, padx=10, pady=4)

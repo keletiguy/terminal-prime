@@ -11,7 +11,7 @@ class KpiCard(ctk.CTkFrame):
         if badge:
             ctk.CTkLabel(self, text=badge, font=theme.FONT_SMALL,
                          text_color=badge_color or theme.PRIMARY,
-                         fg_color=theme.SURFACE_LOW, corner_radius=12,
+                         fg_color=theme.SURFACE_HIGH, corner_radius=12,
                          padx=8, pady=2).pack(padx=24, pady=(8, 20), anchor="w")
         else:
             ctk.CTkFrame(self, height=20, fg_color="transparent").pack()

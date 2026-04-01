@@ -12,7 +12,7 @@ class Sidebar(ctk.CTkFrame):
 
     def __init__(self, parent, on_navigate):
         super().__init__(parent, width=theme.SIDEBAR_WIDTH, corner_radius=0,
-                         fg_color=theme.SURFACE)
+                         fg_color=theme.SURFACE_LOW)
         self.on_navigate = on_navigate
         self.active_key = "dashboard"
         self.buttons = {}

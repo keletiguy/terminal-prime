@@ -1,9 +1,13 @@
-"""Import service for Mediciel Excel files."""
-import sqlite3
-from datetime import date, datetime, timedelta
-from typing import Any, Dict
+"""Import service for Mediciel Excel files.
 
-from openpyxl import load_workbook
+Uses raw XML extraction from .xlsx to bypass openpyxl style parsing bugs
+(Mediciel exports contain 'biltinId' typo that crashes openpyxl).
+"""
+import sqlite3
+import zipfile
+import xml.etree.ElementTree as ET
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List
 
 from terminal_prime.database.client_repo import ClientRepo
 from terminal_prime.database.affiliate_repo import AffiliateRepo
@@ -13,32 +17,67 @@ from terminal_prime.database.invoice_repo import InvoiceRepo
 # Excel serial date epoch (1899-12-30 for the 1900 date system)
 _EXCEL_EPOCH = date(1899, 12, 30)
 
-# Mediciel column indices (0-based)
+# Mediciel column indices (0-based, after header row)
 _COL_DATE = 2        # "Date facture"
 _COL_CLIENT = 3      # "Client principal"
 _COL_AFFILIATE = 4   # "Affilié"
 _COL_NUMBER = 5      # "N° Facture"
 _COL_AMOUNT = 6      # "Montant Total"
 
+_NS = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+
+
+def _read_xlsx_raw(file_path: str) -> List[List[str]]:
+    """Read xlsx by parsing XML directly, bypassing openpyxl style bugs."""
+    with zipfile.ZipFile(file_path, "r") as z:
+        # Read shared strings
+        strings = []
+        if "xl/sharedStrings.xml" in z.namelist():
+            tree = ET.parse(z.open("xl/sharedStrings.xml"))
+            for si in tree.findall(".//s:si", _NS):
+                parts = []
+                for t in si.iter(f"{{{_NS['s']}}}t"):
+                    if t.text:
+                        parts.append(t.text)
+                strings.append("".join(parts))
+
+        # Read first sheet
+        tree = ET.parse(z.open("xl/worksheets/sheet1.xml"))
+        xml_rows = tree.findall(".//s:sheetData/s:row", _NS)
+
+        rows = []
+        for xml_row in xml_rows:
+            cells = xml_row.findall("s:c", _NS)
+            values = []
+            for cell in cells:
+                cell_type = cell.get("t", "")
+                val_elem = cell.find("s:v", _NS)
+                val = val_elem.text if val_elem is not None else ""
+                if cell_type == "s" and val:
+                    idx = int(val)
+                    val = strings[idx] if idx < len(strings) else val
+                values.append(val)
+            rows.append(values)
+
+    return rows
+
 
 def _parse_date(value: Any) -> date:
-    """Parse a date value from Excel cell.
-
-    Handles:
-    - Python date objects
-    - Python datetime objects
-    - Excel serial dates (int/float)
-    - ISO format strings
-    """
+    """Parse a date value from various formats."""
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):
         return value
     if isinstance(value, (int, float)):
-        # Excel serial date
         return _EXCEL_EPOCH + timedelta(days=int(value))
     if isinstance(value, str):
-        return date.fromisoformat(value)
+        value = value.strip()
+        if not value:
+            raise ValueError("Empty date string")
+        try:
+            return _EXCEL_EPOCH + timedelta(days=int(float(value)))
+        except ValueError:
+            return date.fromisoformat(value)
     raise ValueError(f"Cannot parse date from {value!r}")
 
 
@@ -55,9 +94,6 @@ class ImportService:
         Returns dict with keys: imported, duplicates, clients_created,
         affiliates_created, errors.
         """
-        wb = load_workbook(file_path, read_only=True, data_only=True)
-        ws = wb.active
-
         stats = {
             "imported": 0,
             "duplicates": 0,
@@ -70,8 +106,17 @@ class ImportService:
         existing_clients: Dict[str, int] = {}
         existing_affiliates: Dict[str, int] = {}
 
-        rows = list(ws.iter_rows(min_row=2, values_only=True))  # skip header
-        wb.close()
+        # Try openpyxl first, fall back to raw XML if it crashes (Mediciel bug)
+        try:
+            from openpyxl import load_workbook
+            wb = load_workbook(file_path, read_only=True, data_only=True)
+            ws = wb.active
+            rows = [row for row in ws.iter_rows(min_row=2, values_only=True)]
+            wb.close()
+        except TypeError:
+            # Mediciel exports have 'biltinId' typo that crashes openpyxl
+            all_rows = _read_xlsx_raw(file_path)
+            rows = all_rows[1:]  # skip header row
 
         for row in rows:
             try:
@@ -119,10 +164,10 @@ class ImportService:
 
                 # Parse amount
                 amount_val = row[_COL_AMOUNT]
-                if amount_val is None:
+                if not amount_val:
                     stats["errors"] += 1
                     continue
-                amount = int(amount_val)
+                amount = int(float(amount_val))
 
                 # Get or create client
                 if client_name in existing_clients:

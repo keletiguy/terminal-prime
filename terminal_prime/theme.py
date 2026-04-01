@@ -32,14 +32,15 @@ CORNER_RADIUS = 10
 FONT_FAMILY = "Inter"
 
 # Font tuples: (family, size, weight)
-HEADING = (FONT_FAMILY, 24, "bold")
-TITLE = (FONT_FAMILY, 18, "bold")
+# Sizes match Stitch design: display-lg=3.5rem, headline-sm=1.5rem, etc.
+HEADING = (FONT_FAMILY, 32, "bold")
+TITLE = (FONT_FAMILY, 20, "bold")
 BODY = (FONT_FAMILY, 14)
 BODY_BOLD = (FONT_FAMILY, 14, "bold")
 LABEL = (FONT_FAMILY, 12)
-LABEL_UPPER = (FONT_FAMILY, 11, "bold")
-SMALL = (FONT_FAMILY, 10)
-KPI = (FONT_FAMILY, 32, "bold")
+LABEL_UPPER = (FONT_FAMILY, 10, "bold")
+SMALL = (FONT_FAMILY, 11)
+KPI = (FONT_FAMILY, 48, "bold")
 
 # Font aliases (theme.FONT_* used by components)
 FONT_HEADING = HEADING
