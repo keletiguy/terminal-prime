@@ -93,6 +93,8 @@ class InvoiceRepo:
         status: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> List[Invoice]:
         query = """
             SELECT i.*,
@@ -112,12 +114,45 @@ class InvoiceRepo:
         if status is not None:
             conditions.append("i.status = ?")
             params.append(status)
+        if date_from is not None:
+            conditions.append("i.date >= ?")
+            params.append(date_from.isoformat())
+        if date_to is not None:
+            conditions.append("i.date <= ?")
+            params.append(date_to.isoformat())
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         query += " GROUP BY i.id ORDER BY i.due_date ASC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_invoice(r) for r in rows]
+
+    def count(
+        self,
+        client_id: Optional[int] = None,
+        status: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> int:
+        query = "SELECT COUNT(*) AS cnt FROM invoices i"
+        params: list = []
+        conditions: list = []
+        if client_id is not None:
+            conditions.append("i.client_id = ?")
+            params.append(client_id)
+        if status is not None:
+            conditions.append("i.status = ?")
+            params.append(status)
+        if date_from is not None:
+            conditions.append("i.date >= ?")
+            params.append(date_from.isoformat())
+        if date_to is not None:
+            conditions.append("i.date <= ?")
+            params.append(date_to.isoformat())
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        row = self.conn.execute(query, params).fetchone()
+        return row["cnt"]
 
     def get_unpaid(self) -> List[Invoice]:
         rows = self.conn.execute(
