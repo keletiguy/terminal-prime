@@ -307,7 +307,8 @@ class InvoicesView(ctk.CTkScrollableFrame):
             self.on_data_changed()
 
     def refresh(self):
-        for widget in self.winfo_children():
-            widget.destroy()
+        """Refresh data without rebuilding widgets."""
         self.current_page = 0
-        self._build()
+        outstanding = self._get_outstanding()
+        self.kpi_encours.update_values(theme.format_fcfa(outstanding))
+        self._load_data()

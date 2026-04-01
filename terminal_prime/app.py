@@ -59,6 +59,8 @@ class App(ctk.CTk):
             view.grid(row=0, column=0, sticky="nsew")
 
     def _navigate(self, key):
+        if key == self._active_key:
+            return
         for view in self.views.values():
             view.grid_remove()
         self.views[key].grid()
@@ -67,7 +69,8 @@ class App(ctk.CTk):
         if key in self._dirty:
             self._dirty.discard(key)
             if hasattr(self.views[key], 'refresh'):
-                self.views[key].refresh()
+                # Defer refresh to after frame is visible (smoother)
+                self.after(50, self.views[key].refresh)
 
     def _mark_all_dirty(self):
         """Mark all views except the active one as needing refresh."""
