@@ -14,9 +14,9 @@ class GradientProgressBar(ctk.CTkFrame):
         self.canvas = Canvas(self, bg=theme.SURFACE_LOWEST, highlightthickness=0, height=8)
         self.canvas.pack(fill="x", pady=(4, 0))
         self._value = value
-        self.canvas.bind("<Configure>", lambda e: self._draw())
+        self.canvas.bind("<Configure>", lambda e: self._render_bar())
 
-    def _draw(self):
+    def _render_bar(self):
         self.canvas.delete("all")
         w = self.canvas.winfo_width()
         fill_w = int(w * min(self._value / 100, 1.0))
@@ -25,4 +25,4 @@ class GradientProgressBar(ctk.CTkFrame):
 
     def set_value(self, value):
         self._value = value
-        self._draw()
+        self._render_bar()

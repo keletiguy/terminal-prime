@@ -15,14 +15,14 @@ class BarChart(ctk.CTkFrame):
         self.canvas = Canvas(self, bg=theme.SURFACE_CONT, highlightthickness=0, height=200)
         self.canvas.pack(fill="x", padx=24, pady=(0, 20))
         self._bars_data = []
-        self.canvas.bind("<Configure>", lambda e: self._draw())
+        self.canvas.bind("<Configure>", lambda e: self._render_bars())
 
     def set_data(self, bars: List[Tuple[str, int, str]]):
         """bars: [(label, value, color), ...]"""
         self._bars_data = bars
-        self._draw()
+        self._render_bars()
 
-    def _draw(self):
+    def _render_bars(self):
         self.canvas.delete("all")
         if not self._bars_data:
             return
