@@ -4,6 +4,12 @@ from terminal_prime.database.connection import get_connection, close_connection
 from terminal_prime.database.schema import create_tables
 from terminal_prime.components.sidebar import Sidebar
 from terminal_prime.components.topbar import Topbar
+from terminal_prime.views.dashboard_view import DashboardView
+from terminal_prime.views.invoices_view import InvoicesView
+from terminal_prime.views.collections_view import CollectionsView
+from terminal_prime.views.client_analysis_view import ClientAnalysisView
+from terminal_prime.views.reports_view import ReportsView
+
 
 class App(ctk.CTk):
     def __init__(self):
@@ -37,22 +43,25 @@ class App(ctk.CTk):
         self.content.grid_columnconfigure(0, weight=1)
 
         self.views = {}
-        self._create_placeholder_views()
+        self._create_views()
         self._navigate("dashboard")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    def _create_placeholder_views(self):
-        for key, label in Sidebar.NAV_ITEMS:
-            frame = ctk.CTkFrame(self.content, fg_color=theme.SURFACE, corner_radius=0)
-            frame.grid(row=0, column=0, sticky="nsew")
-            ctk.CTkLabel(frame, text=label, font=theme.FONT_HEADING,
-                         text_color=theme.ON_SURFACE).place(relx=0.5, rely=0.5, anchor="center")
-            self.views[key] = frame
+    def _create_views(self):
+        self.views["dashboard"] = DashboardView(self.content, self.conn)
+        self.views["invoices"] = InvoicesView(self.content, self.conn, on_data_changed=self._refresh_all)
+        self.views["collections"] = CollectionsView(self.content, self.conn, on_data_changed=self._refresh_all)
+        self.views["analysis"] = ClientAnalysisView(self.content, self.conn)
+        self.views["reports"] = ReportsView(self.content, self.conn)
+        for view in self.views.values():
+            view.grid(row=0, column=0, sticky="nsew")
 
     def _navigate(self, key):
         for view in self.views.values():
             view.grid_remove()
         self.views[key].grid()
+        if hasattr(self.views[key], 'refresh'):
+            self.views[key].refresh()
 
     def _refresh_all(self):
         for view in self.views.values():
