@@ -41,17 +41,29 @@ LABEL_UPPER = (FONT_FAMILY, 11, "bold")
 SMALL = (FONT_FAMILY, 10)
 KPI = (FONT_FAMILY, 32, "bold")
 
-# Status colors
+# Font aliases (theme.FONT_* used by components)
+FONT_HEADING = HEADING
+FONT_TITLE = TITLE
+FONT_BODY = BODY
+FONT_BODY_BOLD = BODY_BOLD
+FONT_LABEL = LABEL
+FONT_LABEL_UPPER = LABEL_UPPER
+FONT_SMALL = SMALL
+FONT_KPI = KPI
+
+# Status colors: (background, foreground) tuples
 STATUS_COLORS = {
-    "EN_ATTENTE": SECONDARY,
-    "PAYEE": "#66bb6a",
-    "PARTIELLE": TERTIARY,
-    "EN_RETARD": ERROR,
+    "EN_ATTENTE": (SECONDARY_CONT, SECONDARY),
+    "PAYEE": ("#1b5e20", "#66bb6a"),
+    "PARTIELLE": (TERTIARY_CONT, TERTIARY),
+    "EN_RETARD": (ERROR_CONT, ERROR),
 }
 
 # ─── Window dimensions ───────────────────────────────────────────────────────
 WINDOW_WIDTH = 1400
 WINDOW_HEIGHT = 850
+WINDOW_MIN_WIDTH = 1024
+WINDOW_MIN_HEIGHT = 600
 SIDEBAR_WIDTH = 250
 
 
