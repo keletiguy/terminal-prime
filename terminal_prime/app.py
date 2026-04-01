@@ -43,14 +43,16 @@ class App(ctk.CTk):
         self.content.grid_columnconfigure(0, weight=1)
 
         self.views = {}
+        self._dirty = set()
+        self._active_key = None
         self._create_views()
         self._navigate("dashboard")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _create_views(self):
         self.views["dashboard"] = DashboardView(self.content, self.conn)
-        self.views["invoices"] = InvoicesView(self.content, self.conn, on_data_changed=self._refresh_all)
-        self.views["collections"] = CollectionsView(self.content, self.conn, on_data_changed=self._refresh_all)
+        self.views["invoices"] = InvoicesView(self.content, self.conn, on_data_changed=self._mark_all_dirty)
+        self.views["collections"] = CollectionsView(self.content, self.conn, on_data_changed=self._mark_all_dirty)
         self.views["analysis"] = ClientAnalysisView(self.content, self.conn)
         self.views["reports"] = ReportsView(self.content, self.conn)
         for view in self.views.values():
@@ -60,13 +62,21 @@ class App(ctk.CTk):
         for view in self.views.values():
             view.grid_remove()
         self.views[key].grid()
-        if hasattr(self.views[key], 'refresh'):
-            self.views[key].refresh()
+        self._active_key = key
+        # Only refresh if data changed since last visit
+        if key in self._dirty:
+            self._dirty.discard(key)
+            if hasattr(self.views[key], 'refresh'):
+                self.views[key].refresh()
 
-    def _refresh_all(self):
-        for view in self.views.values():
-            if hasattr(view, 'refresh'):
-                view.refresh()
+    def _mark_all_dirty(self):
+        """Mark all views except the active one as needing refresh."""
+        for key in self.views:
+            if key != self._active_key:
+                self._dirty.add(key)
+        # Refresh the active view immediately
+        if self._active_key and hasattr(self.views[self._active_key], 'refresh'):
+            self.views[self._active_key].refresh()
 
     def _on_close(self):
         close_connection()

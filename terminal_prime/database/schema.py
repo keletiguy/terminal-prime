@@ -46,4 +46,14 @@ def create_tables(conn: sqlite3.Connection) -> None:
             FOREIGN KEY (invoice_id) REFERENCES invoices(id),
             FOREIGN KEY (client_id) REFERENCES clients(id)
         );
+        -- Performance indexes
+        CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);
+        CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+        CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date);
+        CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
+        CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(number);
+        CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id);
+        CREATE INDEX IF NOT EXISTS idx_payments_client ON payments(client_id);
+        CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(date);
+        CREATE INDEX IF NOT EXISTS idx_affiliates_client ON affiliates(client_id);
     """)
