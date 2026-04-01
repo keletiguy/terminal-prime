@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Commercial Balance Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-fixed": "#d4e3ff",
+                        "surface-container": "#20201f",
+                        "on-background": "#e5e2e1",
+                        "surface-variant": "#353535",
+                        "on-primary-fixed-variant": "#0c4881",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#393939",
+                        "inverse-primary": "#2f609a",
+                        "on-secondary-fixed": "#0b1c31",
+                        "surface-container-low": "#1c1b1b",
+                        "on-surface-variant": "#c2c6d1",
+                        "on-primary-fixed": "#001c3a",
+                        "on-primary-container": "#a3c7ff",
+                        "on-tertiary-fixed": "#271900",
+                        "outline": "#8c919b",
+                        "on-secondary": "#213147",
+                        "outline-variant": "#424750",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface": "#131313",
+                        "on-tertiary-container": "#fcba2d",
+                        "on-tertiary": "#422d00",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#fdbb2e",
+                        "tertiary": "#fdbb2e",
+                        "tertiary-container": "#6d4c00",
+                        "primary-fixed": "#d4e3ff",
+                        "primary-container": "#1f538d",
+                        "secondary-container": "#3a4a61",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "surface-dim": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-fixed-variant": "#38485f",
+                        "surface-container-highest": "#353535",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#ffdea8",
+                        "on-primary": "#00315e",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed-dim": "#b7c7e4",
+                        "secondary": "#b7c7e4",
+                        "primary": "#a5c8ff",
+                        "on-tertiary-fixed-variant": "#5e4200",
+                        "on-secondary-container": "#a9b9d5",
+                        "surface-tint": "#a5c8ff",
+                        "background": "#131313"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.625rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .technical-glow {
+            box-shadow: 0 0 15px rgba(31, 83, 141, 0.1);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #131313; }
+        ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (from JSON) -->
+<aside class="h-screen w-64 flex flex-col shrink-0 bg-[#131313] dark:bg-[#131313] border-r-0 py-6 font-['Inter'] body-md leading-[1.5] tracking-tight">
+<div class="px-6 mb-10">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold">T</div>
+<div>
+<h1 class="text-lg font-black tracking-tighter text-[#1f538d] dark:text-[#a5c8ff]">Terminal Prime</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">Accounting Dept</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active Item: Dashboard -->
+<a class="bg-[#1f538d] text-white rounded-[10px] mx-2 px-4 py-3 flex items-center gap-3 active:brightness-125 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="text-[#c2c6d1] hover:bg-[#2a2a2a] rounded-[10px] mx-2 px-4 py-3 flex items-center gap-3 transition-colors active:brightness-125 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>Invoices</span>
+</a>
+<a class="text-[#c2c6d1] hover:bg-[#2a2a2a] rounded-[10px] mx-2 px-4 py-3 flex items-center gap-3 transition-colors active:brightness-125 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Collections</span>
+</a>
+<a class="text-[#c2c6d1] hover:bg-[#2a2a2a] rounded-[10px] mx-2 px-4 py-3 flex items-center gap-3 transition-colors active:brightness-125 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Client Analysis</span>
+</a>
+<a class="text-[#c2c6d1] hover:bg-[#2a2a2a] rounded-[10px] mx-2 px-4 py-3 flex items-center gap-3 transition-colors active:brightness-125 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span>Reports</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<div class="bg-surface-container-low p-4 rounded-[10px] border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-3">
+<img alt="User Profile Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="professional male accountant in dark blue suit profile portrait in corporate setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBByzvlmZ2fBUivNj5NcYKLe-b9U3I9dcANDsc4bQPXKgjQFBQKPyzuEs6UA8uMe-2fXD6AR94T0j6xazypy1RHtmLK-qBwVIfwbhOZ_yAlH4skjJ4EL8uRHnAgT4gnX6YNDlkYzQZT1yLiNnQHZ2s21Qqx4DbwcsRo6Ty0jSCg4Q9bbZl7tph74X67145X97xfRtdAW5yFmYb3tP8H2nbgRBDpyXuU_nKQ10S2xBdI1DAA61bEWvU7ysDXgmT1tNH2MhiFxXtibvI"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold truncate">Marc Dupont</p>
+<p class="text-[10px] text-on-surface-variant truncate">Chief Accountant</p>
+</div>
+</div>
+<button class="w-full py-2 bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs rounded-lg transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">logout</span>
+                        Sign Out
+                    </button>
+</div>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-surface">
+<!-- TopNavBar (from JSON) -->
+<header class="w-full h-16 sticky top-0 z-50 bg-[#131313]/80 backdrop-blur-md flex items-center justify-between px-8 gap-6 border-b border-[#424750]/15">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-lowest border-none rounded-[10px] pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-[#a5c8ff] transition-all placeholder:text-on-surface-variant/40" placeholder="Search account, invoice or client..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-[#a5c8ff] cursor-pointer transition-colors" title="Calendar">calendar_today</span>
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-[#a5c8ff] cursor-pointer transition-colors" title="Notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-[#a5c8ff] cursor-pointer transition-colors" title="Settings">settings</span>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant/20"></div>
+<div class="flex items-center gap-3">
+<p class="text-sm font-semibold text-[#a5c8ff]">Commercial Balance</p>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 space-y-8">
+<!-- Summary Section: Bento Style -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Total Émis -->
+<div class="bg-surface-container p-6 rounded-[10px] technical-glow border border-outline-variant/5">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Total Émis</span>
+<span class="material-symbols-outlined text-primary">outbound</span>
+</div>
+<p class="text-3xl font-black tracking-tight text-on-surface">1,482,900 €</p>
+<div class="mt-4 flex items-center gap-2">
+<span class="text-[10px] px-2 py-0.5 bg-primary/10 text-primary font-bold rounded-full">+12.4% vs last mo</span>
+</div>
+</div>
+<!-- Total Recouvré -->
+<div class="bg-surface-container p-6 rounded-[10px] technical-glow border border-outline-variant/5">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Total Recouvré</span>
+<span class="material-symbols-outlined text-tertiary">task_alt</span>
+</div>
+<p class="text-3xl font-black tracking-tight text-on-surface">1,154,200 €</p>
+<div class="mt-4 flex items-center gap-2">
+<span class="text-[10px] px-2 py-0.5 bg-tertiary/10 text-tertiary font-bold rounded-full">77.8% Collection Rate</span>
+</div>
+</div>
+<!-- Solde Global -->
+<div class="bg-surface-container p-6 rounded-[10px] technical-glow border border-outline-variant/5 bg-gradient-to-br from-surface-container to-surface-container-high">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Solde Global</span>
+<span class="material-symbols-outlined text-error">account_balance_wallet</span>
+</div>
+<p class="text-3xl font-black tracking-tight text-error">328,700 €</p>
+<div class="mt-4 flex items-center gap-2">
+<span class="text-[10px] px-2 py-0.5 bg-error/10 text-error font-bold rounded-full">Risk Exposure: High</span>
+</div>
+</div>
+</div>
+<!-- Middle Section: Aging Chart & Metrics -->
+<div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+<!-- Aging Balance Chart (Bar Chart Visual) -->
+<div class="xl:col-span-3 bg-surface-container p-8 rounded-[10px] border border-outline-variant/5">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h2 class="text-xl font-black tracking-tight">Balance Âgée</h2>
+<p class="text-xs text-on-surface-variant">Distribution of receivables by maturity</p>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-surface-container-high text-[10px] font-bold rounded hover:bg-primary-container transition-colors">EXPORT</button>
+<button class="px-3 py-1 bg-surface-container-high text-[10px] font-bold rounded hover:bg-primary-container transition-colors">DETAILS</button>
+</div>
+</div>
+<div class="flex items-end justify-between h-48 gap-4 px-4">
+<!-- 0-30j -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-all h-[40%] relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-primary">131.5K</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">0-30j</span>
+</div>
+<!-- 31-60j -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-tertiary/20 rounded-t-sm group-hover:bg-tertiary/40 transition-all h-[25%] relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-tertiary">82.2K</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">31-60j</span>
+</div>
+<!-- 61-90j -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-tertiary-container/30 rounded-t-sm group-hover:bg-tertiary-container/50 transition-all h-[15%] relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-tertiary-container">49.3K</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">61-90j</span>
+</div>
+<!-- +90j -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-error/20 rounded-t-sm group-hover:bg-error/40 transition-all h-[20%] relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-error">65.7K</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">+90j</span>
+</div>
+</div>
+</div>
+<!-- Side Metric: Recovery Progress -->
+<div class="xl:col-span-2 bg-surface-container p-8 rounded-[10px] border border-outline-variant/5 flex flex-col justify-between">
+<div>
+<h2 class="text-xl font-black tracking-tight mb-2">Performance</h2>
+<p class="text-xs text-on-surface-variant mb-6">Monthly collection efficiency vs targets</p>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between text-xs font-bold mb-2">
+<span>Target Efficiency</span>
+<span>85%</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-primary w-[77%]"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-[10px]">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase">DSO</p>
+<p class="text-xl font-black">42 Days</p>
+<span class="text-[9px] text-error">↑ 2 days</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-[10px]">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase">CEI</p>
+<p class="text-xl font-black">91.4%</p>
+<span class="text-[9px] text-tertiary">↑ 0.5%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Debtors List -->
+<div class="bg-surface-container rounded-[10px] overflow-hidden border border-outline-variant/5">
+<div class="p-6 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-high/50">
+<h2 class="text-lg font-black tracking-tight">Top 5 Client Debtors</h2>
+<button class="flex items-center gap-2 text-xs font-bold text-primary hover:underline">
+                            View All Aging Reports
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant bg-surface-container-lowest/30">
+<th class="px-6 py-4">Client Name</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4">Total Due</th>
+<th class="px-6 py-4">Overdue (+60j)</th>
+<th class="px-6 py-4">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs">GT</div>
+<div>
+<p class="text-sm font-bold">Global Tech Solutions</p>
+<p class="text-[10px] text-on-surface-variant">ID: #CTS-9821</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-error-container/30 text-error border border-error/20">Critical Risk</span>
+</td>
+<td class="px-6 py-4 font-bold text-sm">84,200 €</td>
+<td class="px-6 py-4 font-bold text-sm text-error">52,000 €</td>
+<td class="px-6 py-4">
+<button class="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">mail</span>
+</button>
+</td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-high/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs">AM</div>
+<div>
+<p class="text-sm font-bold">Apex Media Corp</p>
+<p class="text-[10px] text-on-surface-variant">ID: #CTS-5542</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-tertiary-container/30 text-tertiary border border-tertiary/20">High Risk</span>
+</td>
+<td class="px-6 py-4 font-bold text-sm">62,500 €</td>
+<td class="px-6 py-4 font-bold text-sm text-tertiary">18,000 €</td>
+<td class="px-6 py-4">
+<button class="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">mail</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs">NL</div>
+<div>
+<p class="text-sm font-bold">Nova Logistics</p>
+<p class="text-[10px] text-on-surface-variant">ID: #CTS-1109</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-tertiary-container/30 text-tertiary border border-tertiary/20">Moderate</span>
+</td>
+<td class="px-6 py-4 font-bold text-sm">45,100 €</td>
+<td class="px-6 py-4 font-bold text-sm text-on-surface">5,200 €</td>
+<td class="px-6 py-4">
+<button class="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">mail</span>
+</button>
+</td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-high/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs">SR</div>
+<div>
+<p class="text-sm font-bold">Skyline Retail</p>
+<p class="text-[10px] text-on-surface-variant">ID: #CTS-7731</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary-container/30 text-primary border border-primary/20">Recovering</span>
+</td>
+<td class="px-6 py-4 font-bold text-sm">38,900 €</td>
+<td class="px-6 py-4 font-bold text-sm text-on-surface">0 €</td>
+<td class="px-6 py-4">
+<button class="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">mail</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs">BP</div>
+<div>
+<p class="text-sm font-bold">Blue Planet Energy</p>
+<p class="text-[10px] text-on-surface-variant">ID: #CTS-4412</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary-container/30 text-primary border border-primary/20">New Debt</span>
+</td>
+<td class="px-6 py-4 font-bold text-sm">31,000 €</td>
+<td class="px-6 py-4 font-bold text-sm text-on-surface">0 €</td>
+<td class="px-6 py-4">
+<button class="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">mail</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Contextual Floating Action Button -->
+<button class="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-container text-white shadow-lg technical-glow flex items-center justify-center hover:scale-105 transition-transform group">
+<span class="material-symbols-outlined">add</span>
+<span class="absolute right-16 bg-surface-container text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">New Recovery Entry</span>
+</button>
+</body></html>

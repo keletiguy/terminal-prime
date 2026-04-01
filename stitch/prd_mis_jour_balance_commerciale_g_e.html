@@ -1,0 +1,47 @@
+# Logiciel de Balance Commerciale Âgée (Linux - CustomTkinter)
+
+## Objectif
+Développer une application desktop spécialisée dans le suivi de la balance commerciale âgée, permettant de monitorer les factures émises, les recouvrements et d'analyser les retards de paiement (solde âgé) avec une interface CustomTkinter moderne.
+
+## Architecture Proposée (5 Écrans)
+
+### 1. Tableau de Bord de Balance Âgée (Aging Dashboard)
+*   **Fonction :** Analyse visuelle instantanée de la santé financière et des créances.
+*   **Éléments :**
+    *   Cartes de résumé : Total Émis, Total Recouvré, Solde Global.
+    *   Graphique à barres : Répartition de la balance âgée (0-30j, 31-60j, 61-90j, +90j).
+    *   Top 5 des clients débiteurs.
+    *   Indicateur de délai moyen de paiement (DSO).
+
+### 2. Registre des Factures Émises (Invoices)
+*   **Fonction :** Liste exhaustive et gestion des factures de vente.
+*   **Éléments :**
+    *   Tableau : N° Facture, Date, Client, Montant HT/TTC, Statut (En attente, Payée, Partielle).
+    *   Filtres par date et par statut de paiement.
+    *   Actions : Visualiser PDF, Éditer, Annuler.
+
+### 3. Gestion des Recouvrements (Payments/Collections)
+*   **Fonction :** Saisie et suivi des paiements reçus.
+*   **Éléments :**
+    *   Formulaire de saisie : Sélection facture, Date paiement, Mode (Virement, Chèque, Espèces), Montant.
+    *   Historique des derniers encaissements.
+    *   Outil de lettrage automatique (associer paiement à facture).
+
+### 4. Analyse par Client (Client Aging & Ledger)
+*   **Fonction :** Détail du compte pour chaque partenaire commercial.
+*   **Éléments :**
+    *   Recherche de client.
+    *   Grand livre auxiliaire (Historique Débit/Crédit).
+    *   Détail du solde âgé spécifique au client choisi.
+
+### 5. Rapports de Relance & Export (Reports & Reminders)
+*   **Fonction :** Action sur les impayés et reporting.
+*   **Éléments :**
+    *   Liste des factures échues.
+    *   Génération de lettres de relance (Niveau 1, 2, 3).
+    *   Exportation de la balance âgée au format Excel/PDF pour la comptabilité.
+
+## Stack Technique
+*   **Langage :** Python 3
+*   **Interface :** CustomTkinter (Style moderne, mode sombre par défaut, coins arrondis).
+*   **OS :** Linux optimisé.

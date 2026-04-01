@@ -1,0 +1,50 @@
+# Logiciel de Balance Commerciale (Linux - CustomTkinter)
+
+## Objectif
+Développer une application desktop moderne et performante pour la gestion commerciale, optimisée pour les environnements Linux utilisant la bibliothèque CustomTkinter pour une interface utilisateur contemporaine (mode sombre/clair, composants arrondis, animations fluides).
+
+## Architecture Proposée (5 Écrans)
+
+### 1. Tableau de Bord (Dashboard)
+*   **Fonction :** Monitoring en temps réel de l'activité.
+*   **Éléments :**
+    *   Cartes de résumé (Ventes du jour, Profit, Stock total).
+    *   Graphique linéaire des ventes hebdomadaires.
+    *   Liste des dernières transactions.
+    *   Barre latérale de navigation persistante.
+
+### 2. Gestion de l'Inventaire (Inventory)
+*   **Fonction :** Contrôle total sur le catalogue de produits.
+*   **Éléments :**
+    *   Tableau de données (ID, Nom, Catégorie, Prix, Quantité).
+    *   Indicateurs de niveau de stock (code couleur pour stock bas).
+    *   Boutons d'action : "Ajouter Produit", "Importer/Exporter CSV".
+    *   Barre de recherche rapide.
+
+### 3. Point de Vente (POS)
+*   **Fonction :** Interface de facturation rapide.
+*   **Éléments :**
+    *   Zone de scan/recherche de produit.
+    *   Panier virtuel avec calcul automatique de la TVA et du total.
+    *   Options de paiement (Espèces, Carte, Virement).
+    *   Bouton "Valider et Imprimer Facture".
+
+### 4. Achats & Fournisseurs (Purchasing)
+*   **Fonction :** Gestion du réapprovisionnement.
+*   **Éléments :**
+    *   Annuaire des fournisseurs.
+    *   Historique des bons de commande.
+    *   Formulaire d'entrée de stock.
+
+### 5. Analyses & Paramètres (Analytics & Settings)
+*   **Fonction :** Insights business et configuration.
+*   **Éléments :**
+    *   Filtres de dates pour rapports personnalisés.
+    *   Exportation de rapports PDF/Excel.
+    *   Configuration du profil entreprise et préférences d'affichage (Thème).
+
+## Stack Technique
+*   **Langage :** Python 3
+*   **Interface :** CustomTkinter (CTk)
+*   **Base de données :** SQLite (local) ou PostgreSQL (réseau)
+*   **OS :** Linux (Ubuntu, Debian, Fedora, etc.)
