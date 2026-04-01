@@ -45,23 +45,30 @@ class CollectionsView(ctk.CTkScrollableFrame):
         ctk.CTkLabel(form_panel, text="Nouveau Paiement", font=theme.FONT_TITLE,
                      text_color=theme.ON_SURFACE).pack(padx=24, pady=(20, 16), anchor="w")
 
-        # Facture dropdown
-        self._unpaid = self.invoice_repo.get_unpaid()
-        self._invoice_map = {}
-        invoice_labels = []
-        for inv in self._unpaid:
-            label = f"{inv.number} - {inv.client_name or 'N/A'} ({inv.remaining:,} FCFA)".replace(",", " ")
-            invoice_labels.append(label)
-            self._invoice_map[label] = inv
+        # Facture search (instead of dropdown - too many invoices for dropdown)
+        self._unpaid = []
+        self._selected_invoice = None
 
-        ctk.CTkLabel(form_panel, text="FACTURE", font=theme.FONT_LABEL_UPPER,
+        ctk.CTkLabel(form_panel, text="RECHERCHER FACTURE (N° OU CLIENT)", font=theme.FONT_LABEL_UPPER,
                      text_color=theme.ON_SURFACE_VAR).pack(padx=24, pady=(0, 4), anchor="w")
-        self.invoice_var = ctk.StringVar()
-        self.invoice_dd = ctk.CTkOptionMenu(
-            form_panel, values=invoice_labels or ["--"], variable=self.invoice_var,
-            fg_color=theme.SURFACE_LOWEST, button_color=theme.SURFACE_HIGH,
-            font=theme.FONT_BODY, command=self._on_invoice_selected)
-        self.invoice_dd.pack(fill="x", padx=24, pady=(0, 12))
+        self.search_var = ctk.StringVar()
+        self.search_entry = ctk.CTkEntry(
+            form_panel, textvariable=self.search_var, fg_color=theme.SURFACE_LOWEST,
+            border_width=0, font=theme.FONT_BODY,
+            placeholder_text="Tapez un numero ou nom de client...")
+        self.search_entry.pack(fill="x", padx=24, pady=(0, 4))
+        self.search_var.trace_add("write", lambda *_: self._on_search())
+
+        # Results list (max 5 matches)
+        self.results_frame = ctk.CTkFrame(form_panel, fg_color=theme.SURFACE_LOWEST,
+                                           corner_radius=theme.CORNER_RADIUS)
+        self.results_frame.pack(fill="x", padx=24, pady=(0, 12))
+
+        # Selected invoice display
+        self.selected_label = ctk.CTkLabel(form_panel, text="Aucune facture selectionnee",
+                                            font=theme.FONT_BODY,
+                                            text_color=theme.ON_SURFACE_VAR)
+        self.selected_label.pack(padx=24, pady=(0, 12), anchor="w")
 
         # Date entry
         ctk.CTkLabel(form_panel, text="DATE (JJ/MM/AAAA)", font=theme.FONT_LABEL_UPPER,
@@ -89,11 +96,6 @@ class CollectionsView(ctk.CTkScrollableFrame):
         ctk.CTkButton(form_panel, text="Valider le Paiement", fg_color=theme.PRIMARY_CONT,
                       text_color="white", font=theme.FONT_BODY_BOLD,
                       command=self._validate_payment).pack(padx=24, pady=(0, 20), anchor="e")
-
-        # Auto-select first invoice
-        if invoice_labels:
-            self.invoice_var.set(invoice_labels[0])
-            self._on_invoice_selected(invoice_labels[0])
 
         # ── Right: Recent Payments ──────────────────────────────────────
         recent_panel = ctk.CTkFrame(cols, fg_color=theme.SURFACE_CONT,
@@ -138,16 +140,59 @@ class CollectionsView(ctk.CTkScrollableFrame):
         KpiCard(stats_row, label="DSO",
                 value=f"{dso:.0f} jours").grid(row=0, column=2, padx=(8, 0), sticky="nsew")
 
-    def _on_invoice_selected(self, label):
-        inv = self._invoice_map.get(label)
-        if inv:
-            self.amount_var.set(str(inv.remaining))
+    def _on_search(self):
+        query = self.search_var.get().strip()
+        for w in self.results_frame.winfo_children():
+            w.destroy()
+
+        if len(query) < 2:
+            return
+
+        # Search in DB directly (fast with indexes)
+        rows = self.conn.execute(
+            """SELECT i.id, i.number, i.amount, i.status, i.client_id, c.name as client_name,
+                      COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as paid
+               FROM invoices i
+               JOIN clients c ON i.client_id = c.id
+               WHERE i.status != 'PAYEE'
+                 AND (i.number LIKE ? OR c.name LIKE ?)
+               ORDER BY i.date DESC
+               LIMIT 8""",
+            (f"%{query}%", f"%{query}%")
+        ).fetchall()
+
+        for row in rows:
+            remaining = row["amount"] - row["paid"]
+            text = f"{row['number']} - {row['client_name']} ({remaining:,} FCFA)".replace(",", " ")
+            btn = ctk.CTkButton(
+                self.results_frame, text=text, anchor="w",
+                fg_color="transparent", text_color=theme.ON_SURFACE,
+                hover_color=theme.SURFACE_HIGH, font=theme.FONT_BODY,
+                height=36, corner_radius=0,
+                command=lambda r=row, rem=remaining: self._select_invoice(r, rem))
+            btn.pack(fill="x")
+
+    def _select_invoice(self, row, remaining):
+        from terminal_prime.models.invoice import Invoice, InvoiceStatus
+        self._selected_invoice = Invoice(
+            id=row["id"], number=row["number"], client_id=row["client_id"], affiliate_id=0,
+            date=date.today(), due_date=date.today(),
+            amount=row["amount"], status=InvoiceStatus(row["status"]),
+            total_paid=row["paid"], client_name=row["client_name"]
+        )
+        self.selected_label.configure(
+            text=f"Facture: {row['number']} - {row['client_name']} | Solde: {remaining:,} FCFA".replace(",", " "),
+            text_color=theme.PRIMARY)
+        self.amount_var.set(str(remaining))
+        # Clear search results
+        for w in self.results_frame.winfo_children():
+            w.destroy()
+        self.search_var.set("")
 
     def _validate_payment(self):
-        label = self.invoice_var.get()
-        inv = self._invoice_map.get(label)
+        inv = self._selected_invoice
         if inv is None:
-            messagebox.showwarning("Facture requise", "Veuillez selectionner une facture.",
+            messagebox.showwarning("Facture requise", "Veuillez rechercher et selectionner une facture.",
                                    parent=self)
             return
 
