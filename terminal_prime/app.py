@@ -5,10 +5,6 @@ import customtkinter as ctk
 from terminal_prime import theme
 from terminal_prime.database.connection import get_connection, close_connection, get_db_path
 from terminal_prime.database.schema import create_tables
-
-BACKUP_DIR = "backups"
-BACKUP_INTERVAL_MS = 30 * 60 * 1000  # 30 minutes
-MAX_BACKUPS = 10
 from terminal_prime.components.sidebar import Sidebar
 from terminal_prime.components.topbar import Topbar
 from terminal_prime.views.dashboard_view import DashboardView
@@ -16,6 +12,10 @@ from terminal_prime.views.invoices_view import InvoicesView
 from terminal_prime.views.collections_view import CollectionsView
 from terminal_prime.views.client_analysis_view import ClientAnalysisView
 from terminal_prime.views.reports_view import ReportsView
+
+BACKUP_DIR = "backups"
+BACKUP_INTERVAL_MS = 30 * 60 * 1000  # 30 minutes
+MAX_BACKUPS = 10
 
 
 class App(ctk.CTk):
@@ -25,10 +25,28 @@ class App(ctk.CTk):
         self.title("Terminal Prime - Balance Commerciale")
         self.geometry(f"{theme.WINDOW_WIDTH}x{theme.WINDOW_HEIGHT}")
         self.minsize(theme.WINDOW_MIN_WIDTH, theme.WINDOW_MIN_HEIGHT)
-        self.configure(fg_color=theme.SURFACE)
 
         self.conn = get_connection()
         create_tables(self.conn)
+
+        self._active_key = None
+        self._dirty = set()
+
+        self._build_ui()
+
+        # Listen for theme changes
+        theme.on_theme_change(self._on_theme_change)
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._schedule_backup()
+
+    def _build_ui(self):
+        """Build or rebuild the entire UI."""
+        # Destroy existing children
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.configure(fg_color=theme.SURFACE)
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -50,8 +68,6 @@ class App(ctk.CTk):
         self.content.grid_columnconfigure(0, weight=1)
 
         self.views = {}
-        self._dirty = set()
-        self._active_key = None
         self._view_factories = {
             "dashboard": lambda: DashboardView(self.content, self.conn),
             "invoices": lambda: InvoicesView(self.content, self.conn,
@@ -61,11 +77,16 @@ class App(ctk.CTk):
             "analysis": lambda: ClientAnalysisView(self.content, self.conn),
             "reports": lambda: ReportsView(self.content, self.conn),
         }
-        self._navigate("dashboard")
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # Auto-backup every 30 minutes
-        self._schedule_backup()
+        saved_key = self._active_key or "dashboard"
+        self._active_key = None
+        self._navigate(saved_key)
+
+    def _on_theme_change(self, theme_name):
+        """Rebuild UI when theme changes."""
+        mode = "light" if theme_name == "light" else "dark"
+        ctk.set_appearance_mode(mode)
+        self._build_ui()
 
     def _get_or_create_view(self, key):
         if key not in self.views:
@@ -75,7 +96,6 @@ class App(ctk.CTk):
 
     def _navigate(self, key):
         if key == self._active_key:
-            # Still refresh dashboard when clicking on it (KPIs need updating)
             if key == "dashboard" and key in self.views:
                 self.views[key].refresh()
             return
@@ -84,27 +104,21 @@ class App(ctk.CTk):
         view = self._get_or_create_view(key)
         view.grid()
         self._active_key = key
-        # Always refresh on navigation (data updates are fast)
         self._dirty.discard(key)
         if hasattr(view, 'refresh'):
             self.after(50, view.refresh)
 
     def _open_collection(self, invoice):
-        """Navigate to collections with an invoice pre-selected."""
         self.sidebar.active_key = "collections"
         self.sidebar._update_active()
-        # Force navigate even if already on collections
         self._active_key = None
         self._navigate("collections")
-        # Pre-select the invoice after view is ready
         self.after(100, lambda: self.views["collections"].select_invoice(invoice))
 
     def _mark_all_dirty(self):
-        """Mark all views except the active one as needing refresh."""
         for key in self.views:
             if key != self._active_key:
                 self._dirty.add(key)
-        # Refresh the active view immediately
         if self._active_key and hasattr(self.views[self._active_key], 'refresh'):
             self.views[self._active_key].refresh()
 
@@ -118,8 +132,7 @@ class App(ctk.CTk):
             return
         os.makedirs(BACKUP_DIR, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_name = f"terminal_prime_backup_{timestamp}.db"
-        backup_path = os.path.join(BACKUP_DIR, backup_name)
+        backup_path = os.path.join(BACKUP_DIR, f"terminal_prime_backup_{timestamp}.db")
         try:
             shutil.copy2(db_path, backup_path)
             self._cleanup_old_backups()
@@ -127,13 +140,9 @@ class App(ctk.CTk):
             pass
 
     def _cleanup_old_backups(self):
-        """Keep only the last MAX_BACKUPS backups."""
         if not os.path.exists(BACKUP_DIR):
             return
-        backups = sorted(
-            [f for f in os.listdir(BACKUP_DIR) if f.endswith(".db")],
-            reverse=True
-        )
+        backups = sorted([f for f in os.listdir(BACKUP_DIR) if f.endswith(".db")], reverse=True)
         for old in backups[MAX_BACKUPS:]:
             try:
                 os.remove(os.path.join(BACKUP_DIR, old))

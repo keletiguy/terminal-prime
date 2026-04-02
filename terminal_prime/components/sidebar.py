@@ -54,10 +54,28 @@ class Sidebar(ctk.CTkFrame):
             btn.pack(fill="x", pady=2)
             self.buttons[key] = btn
 
-        # Profile section at bottom
-        profile_frame = ctk.CTkFrame(self, fg_color=theme.SURFACE_LOW,
+        # Bottom section
+        bottom = ctk.CTkFrame(self, fg_color="transparent")
+        bottom.grid(row=2, column=0, padx=16, pady=(8, 20), sticky="sew")
+
+        # Theme toggle button
+        current = theme.get_current_theme()
+        toggle_text = "Mode Clair" if current == "dark" else "Mode Sombre"
+        self.theme_btn = ctk.CTkButton(
+            bottom, text=toggle_text, height=36,
+            corner_radius=theme.CORNER_RADIUS,
+            fg_color=theme.SURFACE_HIGH,
+            hover_color=theme.SURFACE_BRIGHT,
+            text_color=theme.ON_SURFACE_VAR,
+            font=theme.FONT_BODY,
+            command=self._toggle_theme,
+        )
+        self.theme_btn.pack(fill="x", pady=(0, 8))
+
+        # Profile
+        profile_frame = ctk.CTkFrame(bottom, fg_color=theme.SURFACE_CONT,
                                       corner_radius=theme.CORNER_RADIUS)
-        profile_frame.grid(row=2, column=0, padx=16, pady=20, sticky="sew")
+        profile_frame.pack(fill="x")
         ctk.CTkLabel(profile_frame, text="Utilisateur",
                      font=theme.FONT_BODY_BOLD,
                      text_color=theme.ON_SURFACE).pack(padx=16, pady=(12, 2), anchor="w")
@@ -72,10 +90,15 @@ class Sidebar(ctk.CTkFrame):
         self._update_active()
         self.on_navigate(key)
 
+    def _toggle_theme(self):
+        current = theme.get_current_theme()
+        new_theme = "light" if current == "dark" else "dark"
+        theme.set_theme(new_theme)
+
     def _update_active(self):
         for key, btn in self.buttons.items():
             if key == self.active_key:
-                btn.configure(fg_color=theme.PRIMARY_CONT, text_color="white",
+                btn.configure(fg_color=theme.PRIMARY_CONT, text_color=theme.ON_PRIMARY,
                               hover_color=theme.PRIMARY_CONT)
             else:
                 btn.configure(fg_color="transparent", text_color=theme.ON_SURFACE_VAR,
