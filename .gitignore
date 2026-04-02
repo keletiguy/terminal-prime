@@ -15,3 +15,5 @@ dist/
 
 # Venv
 .venv/
+build_win/
+dist_win/
