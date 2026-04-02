@@ -7,3 +7,11 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Venv
+.venv/
