@@ -203,14 +203,15 @@ class InvoicesView(ctk.CTkScrollableFrame):
                           command=lambda _: self._apply_filters()
                           ).pack(side="left", padx=(0, 8))
 
-        # Period filter
-        self.period_var = ctk.StringVar(value="Tous")
-        ctk.CTkOptionMenu(inner, values=["Tous", "Mois en cours", "Dernier trimestre", "Annee en cours"],
-                          variable=self.period_var,
+        # Month filter (built from actual data)
+        self.month_var = ctk.StringVar(value="Tous les mois")
+        months = self._get_available_months()
+        self.month_menu = ctk.CTkOptionMenu(inner, values=months,
+                          variable=self.month_var,
                           fg_color=theme.SURFACE_LOWEST, button_color=theme.SURFACE_BRIGHT,
                           font=theme.FONT_BODY, width=180,
-                          command=lambda _: self._apply_filters()
-                          ).pack(side="left", padx=(0, 8))
+                          command=lambda _: self._apply_filters())
+        self.month_menu.pack(side="left", padx=(0, 8))
 
         # Buttons (right side, packed right-to-left)
         ctk.CTkButton(inner, text="Importer Mediciel", fg_color=theme.PRIMARY_CONT,
@@ -237,20 +238,46 @@ class InvoicesView(ctk.CTkScrollableFrame):
 
         self._load_data()
 
-    def _get_period_dates(self):
-        period = self.period_var.get()
-        today = date.today()
-        if period == "Mois en cours":
-            return today.replace(day=1), today
-        elif period == "Dernier trimestre":
-            return today - timedelta(days=90), today
-        elif period == "Annee en cours":
-            return date(today.year, 1, 1), today
+    _MONTH_NAMES = [
+        "", "Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin",
+        "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"
+    ]
+
+    def _get_available_months(self):
+        """Get list of months that have invoices, most recent first."""
+        rows = self.conn.execute(
+            "SELECT DISTINCT strftime('%Y', date) as y, strftime('%m', date) as m "
+            "FROM invoices ORDER BY y DESC, m DESC"
+        ).fetchall()
+        months = ["Tous les mois"]
+        for r in rows:
+            year = r["y"]
+            month_num = int(r["m"])
+            month_name = self._MONTH_NAMES[month_num]
+            months.append(f"{month_name} {year}")
+        return months
+
+    def _get_month_dates(self):
+        """Parse selected month into date range."""
+        selected = self.month_var.get()
+        if selected == "Tous les mois":
+            return None, None
+        for i, name in enumerate(self._MONTH_NAMES):
+            if name and selected.startswith(name):
+                parts = selected.split()
+                year = int(parts[-1])
+                month = i
+                first_day = date(year, month, 1)
+                if month == 12:
+                    last_day = date(year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    last_day = date(year, month + 1, 1) - timedelta(days=1)
+                return first_day, last_day
         return None, None
 
     def _get_filter_params(self):
         status = self.status_var.get()
-        date_from, date_to = self._get_period_dates()
+        date_from, date_to = self._get_month_dates()
         return {
             "status": None if status == "Tous" else status,
             "date_from": date_from,
