@@ -80,7 +80,7 @@ class ReportsView(ctk.CTkScrollableFrame):
         dso_frame = ctk.CTkFrame(self, fg_color=theme.SURFACE_CONT,
                                  corner_radius=theme.CORNER_RADIUS)
         dso_frame.pack(fill="x", padx=24, pady=(0, 24))
-        ctk.CTkLabel(dso_frame, text="DSO (Days Sales Outstanding)", font=theme.FONT_TITLE,
+        ctk.CTkLabel(dso_frame, text="Delai Moyen de Paiement", font=theme.FONT_TITLE,
                      text_color=theme.ON_SURFACE).pack(padx=24, pady=(16, 4), anchor="w")
         ctk.CTkLabel(dso_frame, text=f"{dso:.0f} jours", font=theme.FONT_KPI,
                      text_color=theme.PRIMARY).pack(padx=24, pady=(0, 16), anchor="w")

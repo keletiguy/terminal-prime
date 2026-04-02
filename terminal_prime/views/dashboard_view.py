@@ -59,7 +59,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         dso_box = ctk.CTkFrame(perf_panel, fg_color=theme.SURFACE_LOW,
                                corner_radius=theme.CORNER_RADIUS)
         dso_box.pack(fill="x", padx=24, pady=(0, 8))
-        ctk.CTkLabel(dso_box, text="DSO", font=theme.FONT_LABEL_UPPER,
+        ctk.CTkLabel(dso_box, text="DELAI MOYEN DE PAIEMENT", font=theme.FONT_LABEL_UPPER,
                      text_color=theme.ON_SURFACE_VAR).pack(padx=16, pady=(12, 4), anchor="w")
         self.dso_label = ctk.CTkLabel(dso_box, text="0 jours", font=theme.FONT_BODY_BOLD,
                      text_color=theme.ON_SURFACE)
@@ -68,7 +68,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         cei_box = ctk.CTkFrame(perf_panel, fg_color=theme.SURFACE_LOW,
                                corner_radius=theme.CORNER_RADIUS)
         cei_box.pack(fill="x", padx=24, pady=(0, 20))
-        ctk.CTkLabel(cei_box, text="CEI", font=theme.FONT_LABEL_UPPER,
+        ctk.CTkLabel(cei_box, text="INDICE DE RECOUVREMENT", font=theme.FONT_LABEL_UPPER,
                      text_color=theme.ON_SURFACE_VAR).pack(padx=16, pady=(12, 4), anchor="w")
         self.cei_label = ctk.CTkLabel(cei_box, text="0%", font=theme.FONT_BODY_BOLD,
                      text_color=theme.ON_SURFACE)

@@ -212,7 +212,7 @@ class CollectionsView(ctk.CTkScrollableFrame):
                 value=theme.format_fcfa(kpis["outstanding"])).grid(row=0, column=1, padx=8, sticky="nsew")
 
         dso = self.dashboard_svc.get_dso()
-        KpiCard(stats_row, label="DSO",
+        KpiCard(stats_row, label="Delai Moyen de Paiement",
                 value=f"{dso:.0f} jours").grid(row=0, column=2, padx=(8, 0), sticky="nsew")
 
     def _on_search(self):
