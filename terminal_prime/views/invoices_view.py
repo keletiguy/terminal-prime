@@ -145,6 +145,10 @@ class InvoicesView(ctk.CTkScrollableFrame):
         self.client_repo = ClientRepo(conn)
         self.import_svc = ImportService(conn)
         self.current_page = 0
+        # Init filter vars before _build (used by _get_filtered_outstanding)
+        self.search_var = ctk.StringVar()
+        self.status_var = ctk.StringVar(value="Tous")
+        self.month_var = ctk.StringVar(value="Tous les mois")
         self._build()
 
     def _build(self):
