@@ -45,32 +45,34 @@ class App(ctk.CTk):
         self.views = {}
         self._dirty = set()
         self._active_key = None
-        self._create_views()
+        self._view_factories = {
+            "dashboard": lambda: DashboardView(self.content, self.conn),
+            "invoices": lambda: InvoicesView(self.content, self.conn, on_data_changed=self._mark_all_dirty),
+            "collections": lambda: CollectionsView(self.content, self.conn, on_data_changed=self._mark_all_dirty),
+            "analysis": lambda: ClientAnalysisView(self.content, self.conn),
+            "reports": lambda: ReportsView(self.content, self.conn),
+        }
         self._navigate("dashboard")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    def _create_views(self):
-        self.views["dashboard"] = DashboardView(self.content, self.conn)
-        self.views["invoices"] = InvoicesView(self.content, self.conn, on_data_changed=self._mark_all_dirty)
-        self.views["collections"] = CollectionsView(self.content, self.conn, on_data_changed=self._mark_all_dirty)
-        self.views["analysis"] = ClientAnalysisView(self.content, self.conn)
-        self.views["reports"] = ReportsView(self.content, self.conn)
-        for view in self.views.values():
-            view.grid(row=0, column=0, sticky="nsew")
+    def _get_or_create_view(self, key):
+        if key not in self.views:
+            self.views[key] = self._view_factories[key]()
+            self.views[key].grid(row=0, column=0, sticky="nsew")
+        return self.views[key]
 
     def _navigate(self, key):
         if key == self._active_key:
             return
         for view in self.views.values():
             view.grid_remove()
-        self.views[key].grid()
+        view = self._get_or_create_view(key)
+        view.grid()
         self._active_key = key
-        # Only refresh if data changed since last visit
         if key in self._dirty:
             self._dirty.discard(key)
-            if hasattr(self.views[key], 'refresh'):
-                # Defer refresh to after frame is visible (smoother)
-                self.after(50, self.views[key].refresh)
+            if hasattr(view, 'refresh'):
+                self.after(50, view.refresh)
 
     def _mark_all_dirty(self):
         """Mark all views except the active one as needing refresh."""
