@@ -75,16 +75,19 @@ class App(ctk.CTk):
 
     def _navigate(self, key):
         if key == self._active_key:
+            # Still refresh dashboard when clicking on it (KPIs need updating)
+            if key == "dashboard" and key in self.views:
+                self.views[key].refresh()
             return
         for view in self.views.values():
             view.grid_remove()
         view = self._get_or_create_view(key)
         view.grid()
         self._active_key = key
-        if key in self._dirty:
-            self._dirty.discard(key)
-            if hasattr(view, 'refresh'):
-                self.after(50, view.refresh)
+        # Always refresh on navigation (data updates are fast)
+        self._dirty.discard(key)
+        if hasattr(view, 'refresh'):
+            self.after(50, view.refresh)
 
     def _open_collection(self, invoice):
         """Navigate to collections with an invoice pre-selected."""
