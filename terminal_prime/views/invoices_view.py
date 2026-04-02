@@ -135,10 +135,12 @@ class InvoicesView(ctk.CTkScrollableFrame):
     PAGE_SIZE = 10
 
     def __init__(self, parent, conn: sqlite3.Connection,
-                 on_data_changed: Optional[Callable] = None):
+                 on_data_changed: Optional[Callable] = None,
+                 on_open_collection: Optional[Callable] = None):
         super().__init__(parent, fg_color=theme.SURFACE, corner_radius=0)
         self.conn = conn
         self.on_data_changed = on_data_changed
+        self.on_open_collection = on_open_collection
         self.invoice_repo = InvoiceRepo(conn)
         self.client_repo = ClientRepo(conn)
         self.import_svc = ImportService(conn)
@@ -225,8 +227,10 @@ class InvoicesView(ctk.CTkScrollableFrame):
                      ("Affilie", 150), ("Montant", 120), ("Solde", 100), ("Statut", 100)],
             status_columns={6},
             on_page_change=self._on_page_change,
+            on_double_click=self._on_invoice_double_click,
         )
         self.grid_widget.pack(fill="x", padx=24, pady=(0, 24))
+        self._current_invoices = []
 
         self._load_data()
 
@@ -279,6 +283,7 @@ class InvoicesView(ctk.CTkScrollableFrame):
             invoices = self.invoice_repo.get_all(
                 **params, limit=self.PAGE_SIZE, offset=self.current_page * self.PAGE_SIZE)
 
+        self._current_invoices = invoices
         rows = []
         for inv in invoices:
             rows.append([
@@ -334,6 +339,12 @@ class InvoicesView(ctk.CTkScrollableFrame):
                 affiliate_name=r["affiliate_name"],
             ))
         return invoices, total
+
+    def _on_invoice_double_click(self, idx, row_data):
+        """Navigate to collections with this invoice pre-selected."""
+        if idx < len(self._current_invoices) and self.on_open_collection:
+            inv = self._current_invoices[idx]
+            self.on_open_collection(inv)
 
     def _apply_filters(self):
         self.current_page = 0

@@ -392,6 +392,22 @@ class CollectionsView(ctk.CTkScrollableFrame):
         except Exception as e:
             messagebox.showerror("Erreur", str(e), parent=self)
 
+    def select_invoice(self, invoice):
+        """Pre-select an invoice (called from invoices view double-click)."""
+        self._selected_invoice = invoice
+        remaining = invoice.remaining
+        self.selected_label.configure(
+            text=f"Facture: {invoice.number} - {invoice.client_name} | Solde: {remaining:,} FCFA".replace(",", " "),
+            text_color=theme.PRIMARY)
+        self.search_var.set("")
+        if self.partial_var.get():
+            self.amount_var.set("")
+            self.remaining_label.configure(
+                text=f"Solde total: {remaining:,} FCFA — saisissez le montant partiel".replace(",", " "))
+        else:
+            self.amount_var.set(str(remaining))
+            self.remaining_label.configure(text="")
+
     def refresh(self):
         for widget in self.winfo_children():
             widget.destroy()

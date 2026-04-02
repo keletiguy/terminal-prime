@@ -47,7 +47,9 @@ class App(ctk.CTk):
         self._active_key = None
         self._view_factories = {
             "dashboard": lambda: DashboardView(self.content, self.conn),
-            "invoices": lambda: InvoicesView(self.content, self.conn, on_data_changed=self._mark_all_dirty),
+            "invoices": lambda: InvoicesView(self.content, self.conn,
+                                              on_data_changed=self._mark_all_dirty,
+                                              on_open_collection=self._open_collection),
             "collections": lambda: CollectionsView(self.content, self.conn, on_data_changed=self._mark_all_dirty),
             "analysis": lambda: ClientAnalysisView(self.content, self.conn),
             "reports": lambda: ReportsView(self.content, self.conn),
@@ -73,6 +75,16 @@ class App(ctk.CTk):
             self._dirty.discard(key)
             if hasattr(view, 'refresh'):
                 self.after(50, view.refresh)
+
+    def _open_collection(self, invoice):
+        """Navigate to collections with an invoice pre-selected."""
+        self.sidebar.active_key = "collections"
+        self.sidebar._update_active()
+        # Force navigate even if already on collections
+        self._active_key = None
+        self._navigate("collections")
+        # Pre-select the invoice after view is ready
+        self.after(100, lambda: self.views["collections"].select_invoice(invoice))
 
     def _mark_all_dirty(self):
         """Mark all views except the active one as needing refresh."""

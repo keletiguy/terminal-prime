@@ -39,13 +39,16 @@ def _setup_treeview_style():
 class DataGrid(ctk.CTkFrame):
     def __init__(self, parent, columns: List[Tuple[str, int]],
                  on_page_change: Optional[Callable] = None,
-                 status_columns: Optional[Set[int]] = None):
+                 status_columns: Optional[Set[int]] = None,
+                 on_double_click: Optional[Callable] = None):
         super().__init__(parent, fg_color=theme.SURFACE_CONT, corner_radius=theme.CORNER_RADIUS)
         self.columns = columns
         self.on_page_change = on_page_change
+        self.on_double_click = on_double_click
         self.status_columns = status_columns or set()
         self.current_page = 0
         self.total_pages = 1
+        self._row_data = []
 
         _setup_treeview_style()
 
@@ -62,6 +65,7 @@ class DataGrid(ctk.CTkFrame):
                              stretch=True, anchor="w")
 
         self.tree.pack(fill="both", expand=True, padx=2, pady=(2, 0))
+        self.tree.bind("<Double-1>", self._on_dbl_click)
 
         # Zebra stripe tags
         self.tree.tag_configure("even", background=theme.SURFACE_LOW,
@@ -98,6 +102,7 @@ class DataGrid(ctk.CTkFrame):
 
     def set_data(self, rows: List[List[str]], total: int, page: int, page_size: int):
         """Replace all rows. Fast — Treeview handles thousands of rows natively."""
+        self._row_data = rows
         # Clear existing
         self.tree.delete(*self.tree.get_children())
 
@@ -128,3 +133,13 @@ class DataGrid(ctk.CTkFrame):
     def _next_page(self):
         if self.current_page < self.total_pages - 1 and self.on_page_change:
             self.on_page_change(self.current_page + 1)
+
+    def _on_dbl_click(self, event):
+        if not self.on_double_click:
+            return
+        selection = self.tree.selection()
+        if not selection:
+            return
+        idx = self.tree.index(selection[0])
+        if idx < len(self._row_data):
+            self.on_double_click(idx, self._row_data[idx])
