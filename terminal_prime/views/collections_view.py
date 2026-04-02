@@ -1,7 +1,7 @@
 """Collections management view with payment form and recent payments."""
 import sqlite3
 from datetime import date
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from typing import Callable, Optional
 
 import customtkinter as ctk
@@ -59,10 +59,44 @@ class CollectionsView(ctk.CTkScrollableFrame):
         self.search_entry.pack(fill="x", padx=24, pady=(0, 4))
         self.search_var.trace_add("write", lambda *_: self._on_search())
 
-        # Results list (max 5 matches)
+        # Results list (scrollable Treeview)
         self.results_frame = ctk.CTkFrame(form_panel, fg_color=theme.SURFACE_LOWEST,
-                                           corner_radius=theme.CORNER_RADIUS)
+                                           corner_radius=theme.CORNER_RADIUS, height=180)
         self.results_frame.pack(fill="x", padx=24, pady=(0, 12))
+        self.results_frame.pack_propagate(False)
+
+        style = ttk.Style()
+        style.configure("Search.Treeview",
+                         background=theme.SURFACE_LOWEST,
+                         foreground=theme.ON_SURFACE,
+                         fieldbackground=theme.SURFACE_LOWEST,
+                         font=(theme.FONT_FAMILY, 11),
+                         rowheight=32, borderwidth=0, relief="flat")
+        style.configure("Search.Treeview.Heading", background=theme.SURFACE_LOWEST,
+                         foreground=theme.ON_SURFACE_VAR,
+                         font=(theme.FONT_FAMILY, 9, "bold"), borderwidth=0)
+        style.map("Search.Treeview",
+                  background=[("selected", theme.PRIMARY_CONT)],
+                  foreground=[("selected", "white")])
+
+        self.results_tree = ttk.Treeview(self.results_frame,
+                                          columns=("number", "client", "solde"),
+                                          show="headings", style="Search.Treeview",
+                                          selectmode="browse")
+        self.results_tree.heading("number", text="N. FACTURE", anchor="w")
+        self.results_tree.heading("client", text="CLIENT", anchor="w")
+        self.results_tree.heading("solde", text="SOLDE", anchor="e")
+        self.results_tree.column("number", width=160, minwidth=100)
+        self.results_tree.column("client", width=160, minwidth=100)
+        self.results_tree.column("solde", width=100, minwidth=80, anchor="e")
+
+        scrollbar = ctk.CTkScrollbar(self.results_frame, command=self.results_tree.yview)
+        self.results_tree.configure(yscrollcommand=scrollbar.set)
+        self.results_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.results_tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+        self._search_results = []
 
         # Selected invoice display
         self.selected_label = ctk.CTkLabel(form_panel, text="Aucune facture selectionnee",
@@ -142,13 +176,13 @@ class CollectionsView(ctk.CTkScrollableFrame):
 
     def _on_search(self):
         query = self.search_var.get().strip()
-        for w in self.results_frame.winfo_children():
-            w.destroy()
+        self.results_tree.delete(*self.results_tree.get_children())
+        self._search_results = []
 
         if len(query) < 2:
             return
 
-        # Search in DB directly (fast with indexes)
+        # Search in DB - no LIMIT, all matching unpaid invoices
         rows = self.conn.execute(
             """SELECT i.id, i.number, i.amount, i.status, i.client_id, c.name as client_name,
                       COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as paid
@@ -156,23 +190,27 @@ class CollectionsView(ctk.CTkScrollableFrame):
                JOIN clients c ON i.client_id = c.id
                WHERE i.status != 'PAYEE'
                  AND (i.number LIKE ? OR c.name LIKE ?)
-               ORDER BY i.date DESC
-               LIMIT 8""",
+               ORDER BY c.name, i.date DESC""",
             (f"%{query}%", f"%{query}%")
         ).fetchall()
 
+        self._search_results = rows
         for row in rows:
             remaining = row["amount"] - row["paid"]
-            text = f"{row['number']} - {row['client_name']} ({remaining:,} FCFA)".replace(",", " ")
-            btn = ctk.CTkButton(
-                self.results_frame, text=text, anchor="w",
-                fg_color="transparent", text_color=theme.ON_SURFACE,
-                hover_color=theme.SURFACE_HIGH, font=theme.FONT_BODY,
-                height=36, corner_radius=0,
-                command=lambda r=row, rem=remaining: self._select_invoice(r, rem))
-            btn.pack(fill="x")
+            solde_text = f"{remaining:,} FCFA".replace(",", " ")
+            self.results_tree.insert("", "end",
+                                      values=(row["number"], row["client_name"], solde_text))
 
-    def _select_invoice(self, row, remaining):
+    def _on_tree_select(self, event):
+        selection = self.results_tree.selection()
+        if not selection:
+            return
+        idx = self.results_tree.index(selection[0])
+        if idx >= len(self._search_results):
+            return
+        row = self._search_results[idx]
+        remaining = row["amount"] - row["paid"]
+
         from terminal_prime.models.invoice import Invoice, InvoiceStatus
         self._selected_invoice = Invoice(
             id=row["id"], number=row["number"], client_id=row["client_id"], affiliate_id=0,
@@ -184,10 +222,6 @@ class CollectionsView(ctk.CTkScrollableFrame):
             text=f"Facture: {row['number']} - {row['client_name']} | Solde: {remaining:,} FCFA".replace(",", " "),
             text_color=theme.PRIMARY)
         self.amount_var.set(str(remaining))
-        # Clear search results
-        for w in self.results_frame.winfo_children():
-            w.destroy()
-        self.search_var.set("")
 
     def _validate_payment(self):
         inv = self._selected_invoice
