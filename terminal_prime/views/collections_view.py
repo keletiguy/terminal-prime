@@ -120,6 +120,14 @@ class CollectionsView(ctk.CTkScrollableFrame):
                           fg_color=theme.SURFACE_LOWEST, button_color=theme.SURFACE_HIGH,
                           font=theme.FONT_BODY).pack(fill="x", padx=24, pady=(0, 12))
 
+        # Reference piece
+        ctk.CTkLabel(form_panel, text="REFERENCE PIECE", font=theme.FONT_LABEL_UPPER,
+                     text_color=theme.ON_SURFACE_VAR).pack(padx=24, pady=(0, 4), anchor="w")
+        self.reference_var = ctk.StringVar()
+        ctk.CTkEntry(form_panel, textvariable=self.reference_var, fg_color=theme.SURFACE_LOWEST,
+                     border_width=0, font=theme.FONT_BODY,
+                     placeholder_text="N° cheque, ref virement, bordereau...").pack(fill="x", padx=24, pady=(0, 12))
+
         # Amount entry
         ctk.CTkLabel(form_panel, text="MONTANT (FCFA)", font=theme.FONT_LABEL_UPPER,
                      text_color=theme.ON_SURFACE_VAR).pack(padx=24, pady=(0, 4), anchor="w")
@@ -139,23 +147,28 @@ class CollectionsView(ctk.CTkScrollableFrame):
         ctk.CTkLabel(recent_panel, text="Paiements Recents", font=theme.FONT_TITLE,
                      text_color=theme.ON_SURFACE).pack(padx=24, pady=(20, 16), anchor="w")
 
-        recent = self.payment_repo.get_recent(5)
-        if recent:
-            for pay in recent:
-                row_frame = ctk.CTkFrame(recent_panel, fg_color=theme.SURFACE_LOW,
-                                         corner_radius=theme.CORNER_RADIUS)
-                row_frame.pack(fill="x", padx=24, pady=(0, 8))
-                ctk.CTkLabel(row_frame, text=pay.reference, font=theme.FONT_BODY_BOLD,
-                             text_color=theme.ON_SURFACE).pack(side="left", padx=16, pady=12)
-                ctk.CTkLabel(row_frame, text=theme.format_fcfa(pay.amount),
-                             font=theme.FONT_BODY, text_color=theme.PRIMARY
-                             ).pack(side="right", padx=16, pady=12)
-        else:
-            ctk.CTkLabel(recent_panel, text="Aucun paiement", font=theme.FONT_BODY,
-                         text_color=theme.ON_SURFACE_VAR).pack(padx=24, pady=20)
+        # Recent payments as Treeview for speed
+        recent_tree = ttk.Treeview(recent_panel,
+                                    columns=("ref", "mode", "montant"),
+                                    show="headings", style="Search.Treeview",
+                                    selectmode="none", height=8)
+        recent_tree.heading("ref", text="REFERENCE", anchor="w")
+        recent_tree.heading("mode", text="MODE", anchor="w")
+        recent_tree.heading("montant", text="MONTANT", anchor="e")
+        recent_tree.column("ref", width=180, minwidth=100, stretch=True)
+        recent_tree.column("mode", width=100, minwidth=60, stretch=True)
+        recent_tree.column("montant", width=120, minwidth=80, anchor="e", stretch=True)
+        recent_tree.pack(fill="both", expand=True, padx=16, pady=(0, 16))
 
-        # Spacer
-        ctk.CTkFrame(recent_panel, height=20, fg_color="transparent").pack()
+        recent = self.payment_repo.get_recent(10)
+        for i, pay in enumerate(recent):
+            tags = ["even" if i % 2 == 0 else "odd"]
+            recent_tree.insert("", "end",
+                               values=(pay.reference, pay.mode.value,
+                                       theme.format_fcfa(pay.amount)),
+                               tags=tags)
+        recent_tree.tag_configure("even", background=theme.SURFACE_LOW)
+        recent_tree.tag_configure("odd", background=theme.SURFACE_CONT)
 
         # ── Stats Bar ───────────────────────────────────────────────────
         stats_row = ctk.CTkFrame(self, fg_color="transparent")
@@ -260,13 +273,21 @@ class CollectionsView(ctk.CTkScrollableFrame):
             return
 
         mode = self.mode_var.get()
+        reference = self.reference_var.get().strip()
+
+        if not reference:
+            messagebox.showwarning("Reference requise",
+                                   "Veuillez saisir la reference de la piece (N° cheque, ref virement, etc.).",
+                                   parent=self)
+            return
 
         try:
             self.payment_repo.create(
                 invoice_id=inv.id, client_id=inv.client_id,
-                pay_date=pay_date, amount=amount, mode=mode)
+                pay_date=pay_date, amount=amount, mode=mode, reference=reference)
             self.invoice_repo.update_status_from_payments(inv.id)
-            messagebox.showinfo("Succes", f"Paiement de {theme.format_fcfa(amount)} enregistre.",
+            messagebox.showinfo("Succes",
+                                f"Paiement de {theme.format_fcfa(amount)} enregistre.\nReference: {reference}",
                                 parent=self)
             self.refresh()
             if self.on_data_changed:
