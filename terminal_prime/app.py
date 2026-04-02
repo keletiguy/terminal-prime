@@ -1,7 +1,14 @@
+import os
+import shutil
+from datetime import datetime
 import customtkinter as ctk
 from terminal_prime import theme
-from terminal_prime.database.connection import get_connection, close_connection
+from terminal_prime.database.connection import get_connection, close_connection, get_db_path
 from terminal_prime.database.schema import create_tables
+
+BACKUP_DIR = "backups"
+BACKUP_INTERVAL_MS = 30 * 60 * 1000  # 30 minutes
+MAX_BACKUPS = 10
 from terminal_prime.components.sidebar import Sidebar
 from terminal_prime.components.topbar import Topbar
 from terminal_prime.views.dashboard_view import DashboardView
@@ -57,6 +64,9 @@ class App(ctk.CTk):
         self._navigate("dashboard")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
+        # Auto-backup every 30 minutes
+        self._schedule_backup()
+
     def _get_or_create_view(self, key):
         if key not in self.views:
             self.views[key] = self._view_factories[key]()
@@ -95,6 +105,39 @@ class App(ctk.CTk):
         if self._active_key and hasattr(self.views[self._active_key], 'refresh'):
             self.views[self._active_key].refresh()
 
+    def _schedule_backup(self):
+        self._do_backup()
+        self.after(BACKUP_INTERVAL_MS, self._schedule_backup)
+
+    def _do_backup(self):
+        db_path = get_db_path()
+        if not db_path or not os.path.exists(db_path):
+            return
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"terminal_prime_backup_{timestamp}.db"
+        backup_path = os.path.join(BACKUP_DIR, backup_name)
+        try:
+            shutil.copy2(db_path, backup_path)
+            self._cleanup_old_backups()
+        except Exception:
+            pass
+
+    def _cleanup_old_backups(self):
+        """Keep only the last MAX_BACKUPS backups."""
+        if not os.path.exists(BACKUP_DIR):
+            return
+        backups = sorted(
+            [f for f in os.listdir(BACKUP_DIR) if f.endswith(".db")],
+            reverse=True
+        )
+        for old in backups[MAX_BACKUPS:]:
+            try:
+                os.remove(os.path.join(BACKUP_DIR, old))
+            except Exception:
+                pass
+
     def _on_close(self):
+        self._do_backup()
         close_connection()
         self.destroy()
