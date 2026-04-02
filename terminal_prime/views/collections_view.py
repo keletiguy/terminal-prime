@@ -128,12 +128,40 @@ class CollectionsView(ctk.CTkScrollableFrame):
                      border_width=0, font=theme.FONT_BODY,
                      placeholder_text="N° cheque, ref virement, bordereau...").pack(fill="x", padx=24, pady=(0, 12))
 
+        # Payment type toggle
+        type_frame = ctk.CTkFrame(form_panel, fg_color="transparent")
+        type_frame.pack(fill="x", padx=24, pady=(0, 8))
+        ctk.CTkLabel(type_frame, text="TYPE", font=theme.FONT_LABEL_UPPER,
+                     text_color=theme.ON_SURFACE_VAR).pack(side="left", padx=(0, 12))
+        self.partial_var = ctk.BooleanVar(value=False)
+        self.btn_total = ctk.CTkButton(type_frame, text="Total", width=80, height=30,
+                                        fg_color=theme.PRIMARY_CONT, text_color="white",
+                                        font=theme.FONT_BODY_BOLD,
+                                        corner_radius=theme.CORNER_RADIUS,
+                                        command=lambda: self._set_payment_type(False))
+        self.btn_total.pack(side="left", padx=(0, 4))
+        self.btn_partial = ctk.CTkButton(type_frame, text="Partiel", width=80, height=30,
+                                          fg_color=theme.SURFACE_HIGH, text_color=theme.ON_SURFACE_VAR,
+                                          font=theme.FONT_BODY,
+                                          corner_radius=theme.CORNER_RADIUS,
+                                          command=lambda: self._set_payment_type(True))
+        self.btn_partial.pack(side="left")
+
         # Amount entry
         ctk.CTkLabel(form_panel, text="MONTANT (FCFA)", font=theme.FONT_LABEL_UPPER,
                      text_color=theme.ON_SURFACE_VAR).pack(padx=24, pady=(0, 4), anchor="w")
         self.amount_var = ctk.StringVar()
-        ctk.CTkEntry(form_panel, textvariable=self.amount_var, fg_color=theme.SURFACE_LOWEST,
-                     border_width=0, font=theme.FONT_BODY).pack(fill="x", padx=24, pady=(0, 16))
+        self.amount_entry = ctk.CTkEntry(form_panel, textvariable=self.amount_var,
+                     fg_color=theme.SURFACE_LOWEST, border_width=0, font=theme.FONT_BODY,
+                     state="disabled")
+        self.amount_entry.pack(fill="x", padx=24, pady=(0, 4))
+        self.amount_var.trace_add("write", lambda *_: self._update_remaining_preview())
+
+        # Remaining preview after payment
+        self.remaining_label = ctk.CTkLabel(form_panel, text="",
+                                             font=theme.FONT_SMALL,
+                                             text_color=theme.ON_SURFACE_VAR)
+        self.remaining_label.pack(padx=24, pady=(0, 12), anchor="w")
 
         ctk.CTkButton(form_panel, text="Valider le Paiement", fg_color=theme.PRIMARY_CONT,
                       text_color="white", font=theme.FONT_BODY_BOLD,
@@ -234,7 +262,65 @@ class CollectionsView(ctk.CTkScrollableFrame):
         self.selected_label.configure(
             text=f"Facture: {row['number']} - {row['client_name']} | Solde: {remaining:,} FCFA".replace(",", " "),
             text_color=theme.PRIMARY)
-        self.amount_var.set(str(remaining))
+        # Set amount based on payment type
+        if self.partial_var.get():
+            self.amount_entry.configure(state="normal")
+            self.amount_var.set("")
+            self.remaining_label.configure(
+                text=f"Solde total: {remaining:,} FCFA — saisissez le montant partiel".replace(",", " "))
+        else:
+            self.amount_entry.configure(state="disabled")
+            self.amount_var.set(str(remaining))
+            self.remaining_label.configure(text="")
+
+    def _set_payment_type(self, is_partial: bool):
+        self.partial_var.set(is_partial)
+        if is_partial:
+            self.btn_partial.configure(fg_color=theme.PRIMARY_CONT, text_color="white",
+                                        font=theme.FONT_BODY_BOLD)
+            self.btn_total.configure(fg_color=theme.SURFACE_HIGH, text_color=theme.ON_SURFACE_VAR,
+                                      font=theme.FONT_BODY)
+            self.amount_entry.configure(state="normal")
+            if self._selected_invoice:
+                self.amount_var.set("")
+                remaining = self._selected_invoice.remaining
+                self.remaining_label.configure(
+                    text=f"Solde total: {remaining:,} FCFA — saisissez le montant partiel".replace(",", " "))
+        else:
+            self.btn_total.configure(fg_color=theme.PRIMARY_CONT, text_color="white",
+                                      font=theme.FONT_BODY_BOLD)
+            self.btn_partial.configure(fg_color=theme.SURFACE_HIGH, text_color=theme.ON_SURFACE_VAR,
+                                        font=theme.FONT_BODY)
+            self.amount_entry.configure(state="disabled")
+            if self._selected_invoice:
+                self.amount_var.set(str(self._selected_invoice.remaining))
+                self.remaining_label.configure(text="")
+
+    def _update_remaining_preview(self):
+        if not self._selected_invoice or not self.partial_var.get():
+            return
+        try:
+            amount = int(self.amount_var.get().strip())
+            remaining = self._selected_invoice.remaining
+            after = remaining - amount
+            if amount <= 0:
+                self.remaining_label.configure(
+                    text=f"Solde total: {remaining:,} FCFA".replace(",", " "),
+                    text_color=theme.ON_SURFACE_VAR)
+            elif after > 0:
+                self.remaining_label.configure(
+                    text=f"Solde apres paiement: {after:,} FCFA (partiel)".replace(",", " "),
+                    text_color=theme.TERTIARY)
+            elif after == 0:
+                self.remaining_label.configure(
+                    text="Solde apres paiement: 0 FCFA (solde complet)",
+                    text_color="#66bb6a")
+            else:
+                self.remaining_label.configure(
+                    text=f"Montant depasse le solde de {-after:,} FCFA".replace(",", " "),
+                    text_color=theme.ERROR)
+        except ValueError:
+            pass
 
     def _validate_payment(self):
         inv = self._selected_invoice
@@ -286,8 +372,19 @@ class CollectionsView(ctk.CTkScrollableFrame):
                 invoice_id=inv.id, client_id=inv.client_id,
                 pay_date=pay_date, amount=amount, mode=mode, reference=reference)
             self.invoice_repo.update_status_from_payments(inv.id)
-            messagebox.showinfo("Succes",
-                                f"Paiement de {theme.format_fcfa(amount)} enregistre.\nReference: {reference}",
+
+            after_remaining = inv.remaining - amount
+            if after_remaining > 0:
+                pay_type = "PARTIEL"
+                extra = f"\nSolde restant: {theme.format_fcfa(after_remaining)}"
+            else:
+                pay_type = "TOTAL"
+                extra = "\nFacture entierement soldee."
+
+            messagebox.showinfo("Paiement enregistre",
+                                f"Paiement {pay_type} de {theme.format_fcfa(amount)}\n"
+                                f"Reference: {reference}\n"
+                                f"Facture: {inv.number}{extra}",
                                 parent=self)
             self.refresh()
             if self.on_data_changed:
