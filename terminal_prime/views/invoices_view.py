@@ -157,7 +157,7 @@ class InvoicesView(ctk.CTkScrollableFrame):
                      text_color=theme.ON_SURFACE).grid(row=0, column=0, sticky="w")
 
         # Encours KPI
-        outstanding = self._get_outstanding()
+        outstanding = self._get_filtered_outstanding()
         self.kpi_encours = KpiCard(header, label="Total Encours",
                                    value=theme.format_fcfa(outstanding))
         self.kpi_encours.grid(row=0, column=2, padx=(16, 0), sticky="e")
@@ -284,13 +284,35 @@ class InvoicesView(ctk.CTkScrollableFrame):
             "date_to": date_to,
         }
 
-    def _get_outstanding(self):
-        row = self.conn.execute(
-            """SELECT COALESCE(SUM(i.amount - COALESCE(
+    def _get_filtered_outstanding(self):
+        """Calculate outstanding amount matching current filters and search."""
+        search = self.search_var.get().strip()
+        params = self._get_filter_params()
+
+        query = """SELECT COALESCE(SUM(i.amount - COALESCE(
                 (SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0
             )), 0) AS total
-            FROM invoices i WHERE i.status != 'PAYEE'"""
-        ).fetchone()
+            FROM invoices i
+            JOIN clients c ON i.client_id = c.id
+            JOIN affiliates a ON i.affiliate_id = a.id
+            WHERE i.status != 'PAYEE'"""
+        sql_params = []
+
+        if len(search) >= 2:
+            query += " AND (i.number LIKE ? OR c.name LIKE ? OR a.name LIKE ?)"
+            sql_params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
+
+        if params.get("status"):
+            query += " AND i.status = ?"
+            sql_params.append(params["status"])
+        if params.get("date_from"):
+            query += " AND i.date >= ?"
+            sql_params.append(params["date_from"].isoformat())
+        if params.get("date_to"):
+            query += " AND i.date <= ?"
+            sql_params.append(params["date_to"].isoformat())
+
+        row = self.conn.execute(query, sql_params).fetchone()
         return row["total"]
 
     def _on_search_changed(self):
@@ -312,6 +334,10 @@ class InvoicesView(ctk.CTkScrollableFrame):
             total = self.invoice_repo.count(**params)
             invoices = self.invoice_repo.get_all(
                 **params, limit=self.PAGE_SIZE, offset=self.current_page * self.PAGE_SIZE)
+
+        # Update KPI to match current filter
+        outstanding = self._get_filtered_outstanding()
+        self.kpi_encours.update_values(theme.format_fcfa(outstanding))
 
         self._current_invoices = invoices
         rows = []
@@ -447,6 +473,6 @@ class InvoicesView(ctk.CTkScrollableFrame):
     def refresh(self):
         """Refresh data without rebuilding widgets."""
         self.current_page = 0
-        outstanding = self._get_outstanding()
+        outstanding = self._get_filtered_outstanding()
         self.kpi_encours.update_values(theme.format_fcfa(outstanding))
         self._load_data()
