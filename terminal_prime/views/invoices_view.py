@@ -368,8 +368,9 @@ class InvoicesView(ctk.CTkScrollableFrame):
             stats = self.import_svc.import_file(path)
             messagebox.showinfo(
                 "Import termine",
-                f"Importes: {stats['imported']}\n"
-                f"Doublons: {stats['duplicates']}\n"
+                f"Nouvelles factures: {stats['imported']}\n"
+                f"Reglements mis a jour: {stats['updated']}\n"
+                f"Inchangees: {stats['duplicates']}\n"
                 f"Clients crees: {stats['clients_created']}\n"
                 f"Affilies crees: {stats['affiliates_created']}\n"
                 f"Erreurs: {stats['errors']}",

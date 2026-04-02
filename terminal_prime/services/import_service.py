@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 from terminal_prime.database.client_repo import ClientRepo
 from terminal_prime.database.affiliate_repo import AffiliateRepo
 from terminal_prime.database.invoice_repo import InvoiceRepo
+from terminal_prime.database.payment_repo import PaymentRepo
 
 
 # Excel serial date epoch (1899-12-30 for the 1900 date system)
@@ -23,6 +24,7 @@ _COL_CLIENT = 3      # "Client principal"
 _COL_AFFILIATE = 4   # "Affilié"
 _COL_NUMBER = 5      # "N° Facture"
 _COL_AMOUNT = 6      # "Montant Total"
+_COL_REGLEMENT = 7   # "Règlement"
 
 _NS = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
@@ -87,6 +89,7 @@ class ImportService:
         self.client_repo = ClientRepo(conn)
         self.affiliate_repo = AffiliateRepo(conn)
         self.invoice_repo = InvoiceRepo(conn)
+        self.payment_repo = PaymentRepo(conn)
 
     def import_file(self, file_path: str) -> Dict[str, int]:
         """Import invoices from a Mediciel Excel file.
@@ -97,6 +100,7 @@ class ImportService:
         stats = {
             "imported": 0,
             "duplicates": 0,
+            "updated": 0,
             "clients_created": 0,
             "affiliates_created": 0,
             "errors": 0,
@@ -132,13 +136,52 @@ class ImportService:
                 if not invoice_number:
                     continue
 
-                # Check duplicate by invoice number
+                # Parse amount
+                amount_val = row[_COL_AMOUNT]
+                if not amount_val:
+                    stats["errors"] += 1
+                    continue
+                amount = int(float(amount_val))
+
+                # Parse reglement (column 7)
+                reglement = 0
+                if len(row) > _COL_REGLEMENT and row[_COL_REGLEMENT]:
+                    try:
+                        reglement = int(float(row[_COL_REGLEMENT]))
+                    except (ValueError, TypeError):
+                        reglement = 0
+
+                # Check if invoice already exists
                 existing = self.conn.execute(
-                    "SELECT id FROM invoices WHERE number = ?",
+                    "SELECT id, client_id FROM invoices WHERE number = ?",
                     (invoice_number,),
                 ).fetchone()
+
                 if existing:
-                    stats["duplicates"] += 1
+                    # Invoice exists — check if reglement changed
+                    inv_id = existing["id"]
+                    client_id = existing["client_id"]
+                    current_paid = self.conn.execute(
+                        "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ? AND reference LIKE 'MEDICIEL-%'",
+                        (inv_id,),
+                    ).fetchone()[0]
+
+                    if reglement != current_paid:
+                        # Delete old Mediciel payments and create new one
+                        self.conn.execute(
+                            "DELETE FROM payments WHERE invoice_id = ? AND reference LIKE 'MEDICIEL-%'",
+                            (inv_id,),
+                        )
+                        if reglement > 0:
+                            self.conn.execute(
+                                "INSERT INTO payments (invoice_id, client_id, date, amount, mode, reference) VALUES (?, ?, ?, ?, ?, ?)",
+                                (inv_id, client_id, date.today().isoformat(), reglement, "VIREMENT", f"MEDICIEL-{invoice_number}"),
+                            )
+                        self.conn.commit()
+                        self.invoice_repo.update_status_from_payments(inv_id)
+                        stats["updated"] += 1
+                    else:
+                        stats["duplicates"] += 1
                     continue
 
                 # Parse date
@@ -162,18 +205,10 @@ class ImportService:
                     continue
                 affiliate_name = str(affiliate_name).strip()
 
-                # Parse amount
-                amount_val = row[_COL_AMOUNT]
-                if not amount_val:
-                    stats["errors"] += 1
-                    continue
-                amount = int(float(amount_val))
-
                 # Get or create client
                 if client_name in existing_clients:
                     client_id = existing_clients[client_name]
                 else:
-                    # Check if client already exists in DB
                     existing_row = self.conn.execute(
                         "SELECT id FROM clients WHERE name = ?",
                         (client_name,),
@@ -215,6 +250,19 @@ class ImportService:
                     due_date=due_date,
                     amount=amount,
                 )
+                inv_id = self.conn.execute(
+                    "SELECT id FROM invoices WHERE number = ?", (invoice_number,)
+                ).fetchone()["id"]
+
+                # Create Mediciel payment if reglement > 0
+                if reglement > 0:
+                    self.conn.execute(
+                        "INSERT INTO payments (invoice_id, client_id, date, amount, mode, reference) VALUES (?, ?, ?, ?, ?, ?)",
+                        (inv_id, client_id, inv_date.isoformat(), reglement, "VIREMENT", f"MEDICIEL-{invoice_number}"),
+                    )
+                    self.conn.commit()
+                    self.invoice_repo.update_status_from_payments(inv_id)
+
                 stats["imported"] += 1
 
             except Exception:
