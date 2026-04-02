@@ -160,6 +160,30 @@ class InvoicesView(ctk.CTkScrollableFrame):
                                    value=theme.format_fcfa(outstanding))
         self.kpi_encours.grid(row=0, column=2, padx=(16, 0), sticky="e")
 
+        # ── Search Bar ───────────────────────────────────────────────────
+        search_bar = ctk.CTkFrame(self, fg_color=theme.SURFACE_CONT,
+                                   corner_radius=theme.CORNER_RADIUS)
+        search_bar.pack(fill="x", padx=24, pady=(0, 8))
+
+        search_inner = ctk.CTkFrame(search_bar, fg_color="transparent")
+        search_inner.pack(fill="x", padx=16, pady=12)
+
+        ctk.CTkLabel(search_inner, text="RECHERCHER", font=theme.FONT_LABEL_UPPER,
+                     text_color=theme.ON_SURFACE_VAR).pack(side="left", padx=(0, 8))
+        self.search_var = ctk.StringVar()
+        self.search_entry = ctk.CTkEntry(
+            search_inner, textvariable=self.search_var,
+            fg_color=theme.SURFACE_LOWEST, border_width=0,
+            font=theme.FONT_BODY, width=400,
+            placeholder_text="N° facture, client ou affilie...")
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.search_var.trace_add("write", lambda *_: self._on_search_changed())
+
+        ctk.CTkButton(search_inner, text="Effacer", width=80,
+                      fg_color=theme.SURFACE_HIGH, text_color=theme.ON_SURFACE_VAR,
+                      font=theme.FONT_BODY,
+                      command=self._clear_search).pack(side="left")
+
         # ── Filter Bar ───────────────────────────────────────────────────
         filter_bar = ctk.CTkFrame(self, fg_color=theme.SURFACE_HIGH,
                                   corner_radius=theme.CORNER_RADIUS)
@@ -174,17 +198,6 @@ class InvoicesView(ctk.CTkScrollableFrame):
                           variable=self.status_var,
                           fg_color=theme.SURFACE_LOWEST, button_color=theme.SURFACE_BRIGHT,
                           font=theme.FONT_BODY, width=150,
-                          command=lambda _: self._apply_filters()
-                          ).pack(side="left", padx=(0, 8))
-
-        # Client filter
-        self.client_var = ctk.StringVar(value="Tous")
-        clients = self.client_repo.get_all()
-        client_names = ["Tous"] + [c.name for c in clients]
-        self._client_map = {c.name: c.id for c in clients}
-        ctk.CTkOptionMenu(inner, values=client_names, variable=self.client_var,
-                          fg_color=theme.SURFACE_LOWEST, button_color=theme.SURFACE_BRIGHT,
-                          font=theme.FONT_BODY, width=180,
                           command=lambda _: self._apply_filters()
                           ).pack(side="left", padx=(0, 8))
 
@@ -230,11 +243,9 @@ class InvoicesView(ctk.CTkScrollableFrame):
 
     def _get_filter_params(self):
         status = self.status_var.get()
-        client = self.client_var.get()
         date_from, date_to = self._get_period_dates()
         return {
             "status": None if status == "Tous" else status,
-            "client_id": self._client_map.get(client),
             "date_from": date_from,
             "date_to": date_to,
         }
@@ -248,11 +259,25 @@ class InvoicesView(ctk.CTkScrollableFrame):
         ).fetchone()
         return row["total"]
 
+    def _on_search_changed(self):
+        self.current_page = 0
+        self._load_data()
+
+    def _clear_search(self):
+        self.search_var.set("")
+        self.current_page = 0
+        self._load_data()
+
     def _load_data(self):
+        search = self.search_var.get().strip()
         params = self._get_filter_params()
-        total = self.invoice_repo.count(**params)
-        invoices = self.invoice_repo.get_all(
-            **params, limit=self.PAGE_SIZE, offset=self.current_page * self.PAGE_SIZE)
+
+        if len(search) >= 2:
+            invoices, total = self._search_invoices(search, params)
+        else:
+            total = self.invoice_repo.count(**params)
+            invoices = self.invoice_repo.get_all(
+                **params, limit=self.PAGE_SIZE, offset=self.current_page * self.PAGE_SIZE)
 
         rows = []
         for inv in invoices:
@@ -266,6 +291,49 @@ class InvoicesView(ctk.CTkScrollableFrame):
                 inv.display_status(),
             ])
         self.grid_widget.set_data(rows, total, self.current_page, self.PAGE_SIZE)
+
+    def _search_invoices(self, search, params):
+        """Search invoices by number, client name or affiliate name."""
+        from terminal_prime.models.invoice import Invoice, InvoiceStatus
+
+        query = """SELECT i.*, c.name as client_name, a.name as affiliate_name,
+                          COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as total_paid
+                   FROM invoices i
+                   JOIN clients c ON i.client_id = c.id
+                   JOIN affiliates a ON i.affiliate_id = a.id
+                   WHERE (i.number LIKE ? OR c.name LIKE ? OR a.name LIKE ?)"""
+        sql_params = [f"%{search}%", f"%{search}%", f"%{search}%"]
+
+        if params.get("status"):
+            query += " AND i.status = ?"
+            sql_params.append(params["status"])
+        if params.get("date_from"):
+            query += " AND i.date >= ?"
+            sql_params.append(params["date_from"].isoformat())
+        if params.get("date_to"):
+            query += " AND i.date <= ?"
+            sql_params.append(params["date_to"].isoformat())
+
+        count_query = f"SELECT COUNT(*) FROM ({query})"
+        total = self.conn.execute(count_query, sql_params).fetchone()[0]
+
+        query += " ORDER BY i.date DESC LIMIT ? OFFSET ?"
+        sql_params.extend([self.PAGE_SIZE, self.current_page * self.PAGE_SIZE])
+        rows = self.conn.execute(query, sql_params).fetchall()
+
+        invoices = []
+        for r in rows:
+            invoices.append(Invoice(
+                id=r["id"], number=r["number"],
+                client_id=r["client_id"], affiliate_id=r["affiliate_id"],
+                date=date.fromisoformat(r["date"]),
+                due_date=date.fromisoformat(r["due_date"]),
+                amount=r["amount"], status=InvoiceStatus(r["status"]),
+                total_paid=r["total_paid"],
+                client_name=r["client_name"],
+                affiliate_name=r["affiliate_name"],
+            ))
+        return invoices, total
 
     def _apply_filters(self):
         self.current_page = 0
