@@ -160,7 +160,7 @@ class CollectionsView(ctk.CTkScrollableFrame):
         # ── Stats Bar ───────────────────────────────────────────────────
         stats_row = ctk.CTkFrame(self, fg_color="transparent")
         stats_row.pack(fill="x", padx=24, pady=(0, 24))
-        stats_row.grid_columnconfigure((0, 1, 2), weight=1)
+        stats_row.grid_columnconfigure((0, 1, 2), weight=1, uniform="stat")
 
         collected_mtd = self.payment_repo.get_total_collected_mtd()
         KpiCard(stats_row, label="Total Collecte MTD",

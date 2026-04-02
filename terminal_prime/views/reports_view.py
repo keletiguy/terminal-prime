@@ -42,7 +42,7 @@ class ReportsView(ctk.CTkScrollableFrame):
         # ── 3 KPIs ──────────────────────────────────────────────────────
         kpi_row = ctk.CTkFrame(self, fg_color="transparent")
         kpi_row.pack(fill="x", padx=24, pady=(0, 16))
-        kpi_row.grid_columnconfigure((0, 1, 2), weight=1)
+        kpi_row.grid_columnconfigure((0, 1, 2), weight=1, uniform="kpi")
 
         overdue_data = self._get_overdue_stats(today)
 

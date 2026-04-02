@@ -23,7 +23,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         # KPI Row
         kpi_row = ctk.CTkFrame(self, fg_color="transparent")
         kpi_row.pack(fill="x", padx=24, pady=(24, 16))
-        kpi_row.grid_columnconfigure((0, 1, 2), weight=1)
+        kpi_row.grid_columnconfigure((0, 1, 2), weight=1, uniform="kpi")
 
         self.kpi_emis = KpiCard(kpi_row, label="Total Emis", value="0 FCFA")
         self.kpi_emis.grid(row=0, column=0, padx=(0, 8), sticky="nsew")

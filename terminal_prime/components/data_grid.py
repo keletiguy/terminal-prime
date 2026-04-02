@@ -58,7 +58,8 @@ class DataGrid(ctk.CTkFrame):
 
         for i, (col_name, col_width) in enumerate(columns):
             self.tree.heading(col_ids[i], text=col_name.upper(), anchor="w")
-            self.tree.column(col_ids[i], width=col_width, minwidth=60, anchor="w")
+            self.tree.column(col_ids[i], width=col_width, minwidth=50,
+                             stretch=True, anchor="w")
 
         self.tree.pack(fill="both", expand=True, padx=2, pady=(2, 0))
 

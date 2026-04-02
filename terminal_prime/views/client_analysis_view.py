@@ -74,7 +74,7 @@ class ClientAnalysisView(ctk.CTkScrollableFrame):
         buckets = self.aging_svc.get_client_aging(client_id)
         aging_row = ctk.CTkFrame(self._detail_frame, fg_color="transparent")
         aging_row.pack(fill="x", pady=(0, 16))
-        aging_row.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        aging_row.grid_columnconfigure((0, 1, 2, 3, 4), weight=1, uniform="aging")
 
         labels = ["Courant", "0-30j", "31-60j", "61-90j", "90+j"]
         keys = ["current", "0-30", "31-60", "61-90", "90+"]
