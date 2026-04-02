@@ -212,13 +212,16 @@ class InvoicesView(ctk.CTkScrollableFrame):
                           command=lambda _: self._apply_filters()
                           ).pack(side="left", padx=(0, 8))
 
-        # Buttons
+        # Buttons (right side, packed right-to-left)
         ctk.CTkButton(inner, text="Importer Mediciel", fg_color=theme.PRIMARY_CONT,
                       text_color="white", font=theme.FONT_BODY_BOLD, width=160,
                       command=self._import_file).pack(side="right", padx=(8, 0))
         ctk.CTkButton(inner, text="Nouvelle Facture", fg_color=theme.SURFACE_BRIGHT,
                       text_color=theme.ON_SURFACE, font=theme.FONT_BODY_BOLD, width=150,
-                      command=self._new_invoice).pack(side="right")
+                      command=self._new_invoice).pack(side="right", padx=(8, 0))
+        ctk.CTkButton(inner, text="Vider la base", fg_color=theme.ERROR_CONT,
+                      text_color=theme.ERROR, font=theme.FONT_BODY_BOLD, width=130,
+                      command=self._reset_database).pack(side="right")
 
         # ── DataGrid ────────────────────────────────────────────────────
         self.grid_widget = DataGrid(
@@ -376,6 +379,34 @@ class InvoicesView(ctk.CTkScrollableFrame):
                 self.on_data_changed()
         except Exception as e:
             messagebox.showerror("Erreur d'import", str(e))
+
+    def _reset_database(self):
+        confirm = messagebox.askyesno(
+            "Reinitialiser la base",
+            "Attention : cette action va supprimer TOUTES les factures, "
+            "paiements, clients et affilies.\n\n"
+            "Vous pourrez ensuite reimporter un nouveau fichier Mediciel.\n\n"
+            "Continuer ?",
+            parent=self)
+        if not confirm:
+            return
+
+        try:
+            self.conn.executescript("""
+                DELETE FROM payments;
+                DELETE FROM invoices;
+                DELETE FROM affiliates;
+                DELETE FROM clients;
+            """)
+            messagebox.showinfo("Base reintialisee",
+                                "Toutes les donnees ont ete supprimees.\n"
+                                "Vous pouvez maintenant importer un nouveau fichier.",
+                                parent=self)
+            self.refresh()
+            if self.on_data_changed:
+                self.on_data_changed()
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e), parent=self)
 
     def _new_invoice(self):
         InvoiceModal(self, self.conn, on_save=self._on_invoice_saved)
